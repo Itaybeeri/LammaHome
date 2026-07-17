@@ -29,6 +29,22 @@ for generation (via structured outputs, so slide JSON is schema-valid).
 
 You need Python 3.10+ and Node 18+.
 
+### Quick start (one command)
+
+From the repo root:
+
+```bash
+./run.ps1     # Windows (PowerShell)
+./run.sh      # macOS / Linux
+```
+
+The script sets up the venv and installs deps on first run, then starts the
+backend (port 8000) and frontend (port 5273) together. Ctrl+C stops both. Open
+http://localhost:5273. For live AI output, put your key in `backend/.env` first
+(see below) — otherwise it serves the pre-generated demo deck.
+
+The manual steps below do the same thing by hand.
+
 ### 1. Backend (port 8000)
 
 ```bash
