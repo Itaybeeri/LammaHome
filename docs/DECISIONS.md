@@ -12,6 +12,61 @@ Status tags: `LOCKED` = decided, defend it. `OPEN` = still deciding.
 
 ---
 
+## D-007 · Tech stack: match Lamma — Python backend + React frontend  · LOCKED
+
+- **Chosen:** Python backend, React frontend — deliberately mirroring Lamma's stack.
+- **Rejected:** A single-language / faster-for-me stack (e.g. all-TS Next.js).
+- **Why:** I'm fluent in both, so matching costs nothing and buys the "can drop into your
+  codebase day one" signal for free. When you're equally fast in their stack, matching it is
+  strictly dominant. (If I were faster elsewhere the answer would flip — the brief rewards
+  productivity, not résumé stack.)
+- **Sub-picks (defaults, low-controversy):** FastAPI (async, typed, ideal for an AI
+  pipeline); Vite + React + TypeScript; **AI provider = Anthropic (Claude)** — its tool-use
+  makes "return valid slide JSON" reliable, which the whole pipeline leans on.
+
+## D-006 · Editor scope: fix-and-regenerate, not full canvas editing  · LOCKED
+
+- **Chosen (Tier 2):** The teacher can edit a slide's text, **regenerate a single slide**
+  ("redo this, simpler"), and delete / reorder slides.
+- **Rejected:** Tier 3 full editability (add arbitrary slides, change a slide's type,
+  drag-canvas editing, undo/redo) — and Tier 1 (text-only).
+- **Why:** The editor's *purpose* is teacher **accountability** — fix what the AI got wrong
+  before it's in front of 30 kids — not rebuilding Google Slides. Tier 2 satisfies that and
+  *feels* like full control in a demo, at ~half the cost. Crucially, full editing would pour
+  the scarce 5–10h budget into UI plumbing they **don't** grade, starving the pipeline they
+  **do**. The cut is itself a strong interview answer (brief says: document cuts as
+  assumptions).
+- **Killer feature:** "regenerate this one slide" proves the pipeline is addressable at slide
+  granularity — the best demo moment for an *AI* product, and it lives in Tier 2.
+
+## D-005 · User = K-12 teacher prepping a lesson  · LOCKED
+
+- **Chosen:** The user is a K-12 teacher building tomorrow's lesson (Lamma's real user).
+- **Rejected:** Adjacent ed users (student/tutor/lecturer); non-ed users (sales/conference).
+- **Why:** Reached this by *consequence*, not persuasion — D-004's domain slide types
+  (`check-for-understanding`, `exit-ticket`) only make sense with a classroom behind them, and
+  D-006's "accountability" framing only bites for someone answerable to a class. The domain's
+  real constraints (curriculum, grade reading level, factual stakes) are what make the
+  engineering interesting. Risk (judged by domain-expert founders) is handled by stating the
+  boundary of what I know, not faking fluency — see INTERVIEW-PREP §4.1.
+
+## D-004 · Slide = a pedagogical "move," rendered PowerPoint-style  · LOCKED
+
+- **Chosen:** Keep a familiar PowerPoint interaction/rendering model (slides you click
+  through), but the slide **`type`** field takes *domain* values — e.g. `hook`, `concept`,
+  `check-for-understanding`, `exit-ticket` — not generic ones. The pipeline emits a
+  structured lesson; each type is its own little schema + renderer.
+- **Rejected:** Generic slide types (`title` / `bullets` / `image` / `quote`) = literal
+  PowerPoint.
+- **Why:** The two are *orthogonal* — same PowerPoint feel, same build cost (it's a `type`
+  string either way), identical demo. The only difference is defensibility: "why these types?"
+  has a real answer ("a lesson has a hook, a concept, a comprehension check, an exit ticket —
+  my slide types are the teacher's actual moves") vs. "...they're the standard ones." Same
+  cost, all the signal. This resolves the "what is a slide?" open question and ties the
+  product to Lamma's user (K-12 teacher).
+- **Consequence:** confirms the leaning-K-12-teacher user (needs its own entry once the demo
+  scenario is set), and makes the "slide type = plugin" modular-output story concrete.
+
 ## D-003 · Process: run Brainstorm → Plan → Implement once for the whole project  · LOCKED
 
 - **Chosen:** A single lightweight lifecycle for the whole assignment — brainstorm the
