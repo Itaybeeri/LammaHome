@@ -34,7 +34,7 @@ choice is logged in [`docs/DECISIONS.md`](docs/DECISIONS.md), consolidated in
 | --------- | ----------------------------------------- | ------------------------------------------------------- |
 | Backend   | Python + **FastAPI**                      | Matches Lamma's stack; async fits a fan-out AI pipeline |
 | Frontend  | **React** + Vite + TypeScript             | Matches Lamma's stack; fast dev loop                    |
-| AI        | **Anthropic Claude** (`claude-opus-4-8`)  | Structured outputs → schema-valid slide JSON, no parsing |
+| AI        | **Anthropic Claude** (`claude-haiku-4-5`) | Structured outputs → schema-valid slide JSON, no parsing |
 
 Full rationale (including why *not* a single-language stack): `docs/DECISIONS.md` D-007.
 

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import PromptBox from "./components/PromptBox";
 import DeckView from "./components/Deck";
-import { generateDeck, regenerateSlide } from "./api";
+import ProcessPanel from "./components/ProcessPanel";
+import { generateDeck, regenerateSlide, type ProgressEvent } from "./api";
 import type { Deck, Slide, SlideType } from "./types";
 
 export default function App() {
@@ -13,6 +14,8 @@ export default function App() {
   // Source: "ai" calls Claude, "demo" serves the pre-generated deck. Chosen in
   // the UI so the live demo can run without depending on the API (D-009).
   const [mode, setMode] = useState<"ai" | "demo">("ai");
+  // Live pipeline events for the "behind the scenes" panel.
+  const [log, setLog] = useState<ProgressEvent[]>([]);
 
   // On load, find out whether a key is configured. If not, force demo mode.
   useEffect(() => {
@@ -27,11 +30,14 @@ export default function App() {
 
   const demo = mode === "demo";
 
+  const append = (ev: ProgressEvent) => setLog((l) => [...l, ev]);
+
   async function handleGenerate(subject: string, grade: string) {
     setLoading(true);
     setError(null);
+    setLog([]);
     try {
-      setDeck(await generateDeck(subject, grade, demo));
+      setDeck(await generateDeck(subject, grade, demo, append));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -43,8 +49,9 @@ export default function App() {
     if (!deck) return;
     setBusySlideId(slide.id);
     setError(null);
+    setLog([]);
     try {
-      const updated = await regenerateSlide(deck.subject, deck.grade, slide, targetType, demo);
+      const updated = await regenerateSlide(deck.subject, deck.grade, slide, targetType, demo, append);
       setDeck({ ...deck, slides: deck.slides.map((s) => (s.id === slide.id ? updated : s)) });
     } catch (e) {
       setError((e as Error).message);
@@ -93,16 +100,21 @@ export default function App() {
       )}
       {error && <p className="banner error">{error}</p>}
 
-      {deck && (
-        <DeckView
-          deck={deck}
-          busySlideId={busySlideId}
-          onRegenerate={handleRegenerate}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onMove={handleMove}
-        />
-      )}
+      <div className="workspace">
+        {deck && (
+          <DeckView
+            deck={deck}
+            busySlideId={busySlideId}
+            onRegenerate={handleRegenerate}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onMove={handleMove}
+          />
+        )}
+        {log.length > 0 && (
+          <ProcessPanel log={log} busy={loading || busySlideId !== null} />
+        )}
+      </div>
     </main>
   );
 }

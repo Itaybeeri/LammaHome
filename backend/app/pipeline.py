@@ -29,7 +29,7 @@ from .models import (
     Slide,
 )
 
-MODEL = "claude-opus-4-8"
+MODEL = "claude-haiku-4-5"
 _FALLBACK_PATH = Path(__file__).resolve().parent.parent / "fallback_deck.json"
 
 # One client, created lazily. None when no key is configured -> fallback mode.
@@ -135,19 +135,50 @@ async def fill_slide(subject: str, grade: str, planned: PlannedSlide, slide_id: 
 # --- Orchestration ----------------------------------------------------------
 
 
-async def generate_deck(subject: str, grade: str, demo: bool = False) -> Deck:
-    # demo mode (or no key) -> serve the pre-generated deck, no API call.
+async def generate_deck_events(subject: str, grade: str, demo: bool = False):
+    """Run the pipeline, yielding progress events so the UI can show what's
+    happening behind the scenes. The final event is {"type": "done", "deck": …}."""
     if demo or _client is None:
-        return load_fallback_deck()
+        deck = load_fallback_deck()
+        yield {"type": "log", "message": "Using the pre-generated demo deck (no API call)."}
+        yield {"type": "outline", "moves": [s.type for s in deck.slides]}
+        for s in deck.slides:
+            yield {"type": "slide", "slide_type": s.type, "status": s.status}
+        yield {"type": "done", "deck": deck.model_dump()}
+        return
 
+    yield {"type": "log", "message": f'Planning a lesson on "{subject}" for {grade}…'}
     outline = await generate_outline(subject, grade)
-    slides = await asyncio.gather(
-        *(
-            fill_slide(subject, grade, planned, f"slide-{i + 1}")
-            for i, planned in enumerate(outline.slides)
-        )
-    )
-    return Deck(subject=subject, grade=grade, slides=list(slides))
+    yield {
+        "type": "outline",
+        "moves": [p.type for p in outline.slides],
+        "message": f"Outline: inferred {len(outline.slides)} slides.",
+    }
+
+    yield {"type": "log", "message": f"Filling {len(outline.slides)} slides in parallel…"}
+    tasks = [
+        asyncio.create_task(fill_slide(subject, grade, planned, f"slide-{i + 1}"))
+        for i, planned in enumerate(outline.slides)
+    ]
+    by_id: dict[str, Slide] = {}
+    for finished in asyncio.as_completed(tasks):  # emit each slide as it lands
+        slide = await finished
+        by_id[slide.id] = slide
+        yield {"type": "slide", "slide_type": slide.type, "status": slide.status}
+
+    slides = [by_id[f"slide-{i + 1}"] for i in range(len(outline.slides))]
+    deck = Deck(subject=subject, grade=grade, slides=slides)
+    yield {"type": "done", "deck": deck.model_dump()}
+
+
+async def generate_deck(subject: str, grade: str, demo: bool = False) -> Deck:
+    """Non-streaming form — consume the event stream and return the final deck."""
+    deck: Deck | None = None
+    async for ev in generate_deck_events(subject, grade, demo):
+        if ev["type"] == "done":
+            deck = Deck.model_validate(ev["deck"])
+    assert deck is not None
+    return deck
 
 
 async def regenerate_slide(
@@ -166,6 +197,20 @@ async def regenerate_slide(
     new_type = target_type or slide.type
     planned = PlannedSlide(type=new_type, intent=slide.intent)
     return await fill_slide(subject, grade, planned, slide.id)
+
+
+async def regenerate_slide_events(
+    subject: str, grade: str, slide: Slide, target_type: str | None, demo: bool = False
+):
+    """Streaming form of regenerate_slide — yields progress, ends with
+    {"type": "done", "slide": …}."""
+    if target_type and target_type != slide.type:
+        yield {"type": "log", "message": f"Regenerating as a {target_type} (was {slide.type})…"}
+    else:
+        yield {"type": "log", "message": f"Regenerating the {slide.type} slide…"}
+    new = await regenerate_slide(subject, grade, slide, target_type, demo)
+    yield {"type": "slide", "slide_type": new.type, "status": new.status}
+    yield {"type": "done", "slide": new.model_dump()}
 
 
 # --- Fallback deck ----------------------------------------------------------

@@ -76,20 +76,33 @@ function SlideContent({ slide }: { slide: Slide }) {
         </>
       );
 
-    case "video":
+    case "video": {
+      const embed = str(c.video_url);
+      // Live-generated slides carry a search intent, not a URL (the model
+      // isn't trusted to invent YouTube links). Turn that into a real search.
+      const search =
+        "https://www.youtube.com/results?search_query=" +
+        encodeURIComponent(str(c.search_query) || str(c.title));
       return (
         <>
           <h2>{str(c.title)}</h2>
-          {c.video_url ? (
-            <iframe className="video" src={str(c.video_url)} title={str(c.title)} allowFullScreen />
+          {embed ? (
+            <iframe
+              className="video"
+              src={embed}
+              title={str(c.title)}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
           ) : (
-            // Designed for generated video, shipped embedded: when there's no
-            // curated URL we show what would be searched for instead.
-            <div className="video placeholder">🎬 clip: "{str(c.search_query)}"</div>
+            <a className="video placeholder" href={search} target="_blank" rel="noreferrer">
+              ▶ Find this clip on YouTube ↗
+            </a>
           )}
           <p className="caption">{str(c.caption)}</p>
         </>
       );
+    }
   }
 }
 

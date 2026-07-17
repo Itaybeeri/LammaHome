@@ -13,8 +13,12 @@ from dotenv import load_dotenv
 
 load_dotenv()  # read backend/.env before the pipeline reads ANTHROPIC_API_KEY
 
+import json  # noqa: E402
+from collections.abc import AsyncIterator  # noqa: E402
+
 from fastapi import FastAPI  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from fastapi.responses import StreamingResponse  # noqa: E402
 
 from . import pipeline  # noqa: E402
 from .models import Deck, GenerateRequest, RegenerateRequest, Slide  # noqa: E402
@@ -45,3 +49,24 @@ async def regenerate(req: RegenerateRequest) -> Slide:
     return await pipeline.regenerate_slide(
         req.subject, req.grade, req.slide, req.target_type, req.demo
     )
+
+
+# Streaming variants: emit newline-delimited JSON progress events so the UI can
+# show the pipeline working. The final event carries the result.
+async def _ndjson(events) -> AsyncIterator[str]:
+    async for ev in events:
+        yield json.dumps(ev) + "\n"
+
+
+@app.post("/api/generate/stream")
+async def generate_stream(req: GenerateRequest) -> StreamingResponse:
+    events = pipeline.generate_deck_events(req.subject, req.grade, req.demo)
+    return StreamingResponse(_ndjson(events), media_type="application/x-ndjson")
+
+
+@app.post("/api/regenerate/stream")
+async def regenerate_stream(req: RegenerateRequest) -> StreamingResponse:
+    events = pipeline.regenerate_slide_events(
+        req.subject, req.grade, req.slide, req.target_type, req.demo
+    )
+    return StreamingResponse(_ndjson(events), media_type="application/x-ndjson")
