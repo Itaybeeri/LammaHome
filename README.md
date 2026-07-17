@@ -90,9 +90,11 @@ The script sets up the Python venv and installs deps on first run, then starts
 the backend (port **8000**) and frontend (port **5273**) together. Ctrl+C stops
 both. Open **http://localhost:5273**.
 
-Without a key, it serves the pre-generated demo deck. For live AI output, add
-your key to `backend/.env` first (`cp backend/.env.example backend/.env`, then
-paste your key). The manual steps below do the same thing by hand.
+**API key:** if no Anthropic key is found, the script prompts you to paste one
+and saves it to `backend/.env`. Press Enter to skip — the app then runs in
+**offline demo mode** (the pre-generated deck only; "Real AI" is disabled). You
+can add or change the key in `backend/.env` anytime. The manual steps below do
+the same by hand.
 
 ### Manual — backend (port 8000)
 
