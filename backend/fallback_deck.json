@@ -1,0 +1,85 @@
+{
+  "subject": "photosynthesis",
+  "grade": "7th grade",
+  "slides": [
+    {
+      "id": "slide-1",
+      "type": "hook",
+      "intent": "Grab attention and connect photosynthesis to something students already know.",
+      "status": "ok",
+      "content": {
+        "title": "Where does a tree's mass come from?",
+        "hook": "A giant oak tree can weigh several tons. It didn't get that heavy from the soil - the soil around it barely loses any weight. So where did all that material come from? The answer is mostly... the air."
+      }
+    },
+    {
+      "id": "slide-2",
+      "type": "concept",
+      "intent": "Teach what photosynthesis is and the inputs and outputs.",
+      "status": "ok",
+      "content": {
+        "title": "Photosynthesis: making food from light",
+        "explanation": "Plants use energy from sunlight to turn carbon dioxide (from the air) and water (from the soil) into sugar, which stores that energy. They release oxygen as a by-product. This happens in the leaves, in tiny structures called chloroplasts that contain a green pigment called chlorophyll.",
+        "key_points": [
+          "Inputs: sunlight, carbon dioxide, and water",
+          "Outputs: sugar (stored energy) and oxygen",
+          "Happens in chloroplasts, using the green pigment chlorophyll"
+        ]
+      }
+    },
+    {
+      "id": "slide-3",
+      "type": "video",
+      "intent": "Show the process visually because it happens at a scale students can't see.",
+      "status": "ok",
+      "content": {
+        "title": "Watch: photosynthesis in action",
+        "caption": "A short animation of how a leaf turns sunlight, water, and carbon dioxide into sugar and oxygen.",
+        "search_query": "photosynthesis animation for middle school students",
+        "video_url": "https://www.youtube.com/embed/CMiPYHYIStc"
+      }
+    },
+    {
+      "id": "slide-4",
+      "type": "concept",
+      "intent": "Explain why photosynthesis matters beyond the plant itself.",
+      "status": "ok",
+      "content": {
+        "title": "Why it matters to everyone",
+        "explanation": "Photosynthesis is where almost all the energy in food chains starts. Animals (including us) either eat plants or eat other animals that ate plants. On top of that, the oxygen released by photosynthesis is the oxygen we breathe.",
+        "key_points": [
+          "Plants are the start of nearly every food chain",
+          "The oxygen we breathe comes from photosynthesis",
+          "Less plant life means less food energy and less oxygen"
+        ]
+      }
+    },
+    {
+      "id": "slide-5",
+      "type": "check-for-understanding",
+      "intent": "Verify students can identify the inputs and outputs.",
+      "status": "ok",
+      "content": {
+        "title": "Quick check",
+        "question": "Which of these is NOT something a plant needs to carry out photosynthesis?",
+        "choices": [
+          "Sunlight",
+          "Carbon dioxide",
+          "Water",
+          "Sugar"
+        ],
+        "answer": "Sugar"
+      }
+    },
+    {
+      "id": "slide-6",
+      "type": "exit-ticket",
+      "intent": "Have students reflect and give the teacher a signal of what stuck.",
+      "status": "ok",
+      "content": {
+        "title": "Exit ticket",
+        "prompt": "In your own words, explain where a tree's mass mostly comes from, and name one thing photosynthesis produces that you depend on every day."
+      }
+    }
+  ]
+}
