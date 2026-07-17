@@ -30,7 +30,7 @@ export default function DeckView({ deck, busySlideId, onRegenerate, onEdit, onDe
         {deck.slides.map((s, n) => (
           <button
             key={s.id}
-            className={`chip ${n === i ? "active" : ""} ${s.status === "failed" ? "failed" : ""}`}
+            className={`chip type-${s.type} ${n === i ? "active" : ""} ${s.status === "failed" ? "failed" : ""}`}
             onClick={() => {
               setIndex(n);
               setEditing(false);
