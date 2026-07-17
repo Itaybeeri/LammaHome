@@ -2,11 +2,16 @@ import type { Deck, Slide, SlideType } from "./types";
 
 // A progress event from the backend pipeline (newline-delimited JSON).
 export interface ProgressEvent {
-  type: "log" | "outline" | "slide" | "done";
+  type: "note" | "call" | "result" | "error" | "done";
   message?: string;
-  moves?: string[];
+  stage?: "outline" | "fill";
+  model?: string;
+  schema?: string;
+  system?: string;
+  prompt?: string;
   slide_type?: SlideType;
   status?: "ok" | "failed";
+  response?: unknown;
   deck?: Deck;
   slide?: Slide;
 }
@@ -48,10 +53,13 @@ export async function generateDeck(
   onEvent: (ev: ProgressEvent) => void,
 ): Promise<Deck> {
   let deck: Deck | null = null;
+  let err: string | null = null;
   await streamNdjson("/api/generate/stream", { subject, grade, demo }, (ev) => {
     if (ev.type === "done" && ev.deck) deck = ev.deck;
+    if (ev.type === "error" && ev.message) err = ev.message;
     onEvent(ev);
   });
+  if (err) throw new Error(err);
   if (!deck) throw new Error("No deck returned");
   return deck;
 }
@@ -65,14 +73,17 @@ export async function regenerateSlide(
   onEvent: (ev: ProgressEvent) => void,
 ): Promise<Slide> {
   let out: Slide | null = null;
+  let err: string | null = null;
   await streamNdjson(
     "/api/regenerate/stream",
     { subject, grade, slide, target_type: targetType, demo },
     (ev) => {
       if (ev.type === "done" && ev.slide) out = ev.slide;
+      if (ev.type === "error" && ev.message) err = ev.message;
       onEvent(ev);
     },
   );
+  if (err) throw new Error(err);
   if (!out) throw new Error("No slide returned");
   return out;
 }

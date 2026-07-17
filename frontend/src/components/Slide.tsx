@@ -40,6 +40,7 @@ function SlideContent({ slide }: { slide: Slide }) {
       return (
         <>
           <h2>{str(c.title)}</h2>
+          <SlideImage content={c} />
           <p className="lead">{str(c.hook)}</p>
         </>
       );
@@ -48,6 +49,7 @@ function SlideContent({ slide }: { slide: Slide }) {
       return (
         <>
           <h2>{str(c.title)}</h2>
+          <SlideImage content={c} />
           <p>{str(c.explanation)}</p>
           <ul>{list(c.key_points).map((p, i) => <li key={i}>{p}</li>)}</ul>
         </>
@@ -104,6 +106,13 @@ function SlideContent({ slide }: { slide: Slide }) {
       );
     }
   }
+}
+
+// A real image the backend resolved from the model's image_query (or nothing).
+function SlideImage({ content }: { content: Record<string, unknown> }) {
+  const url = str(content.image_url);
+  if (!url) return null;
+  return <img className="slide-img" src={url} alt={str(content.image_query) || str(content.title)} />;
 }
 
 // content is an untyped bag (it varies by slide type) — narrow at the edge.

@@ -9,7 +9,9 @@
       "status": "ok",
       "content": {
         "title": "Where does a tree's mass come from?",
-        "hook": "A giant oak tree can weigh several tons. It didn't get that heavy from the soil - the soil around it barely loses any weight. So where did all that material come from? The answer is mostly... the air."
+        "hook": "A giant oak tree can weigh several tons. It didn't get that heavy from the soil - the soil around it barely loses any weight. So where did all that material come from? The answer is mostly... the air.",
+        "image_query": "oak tree",
+        "image_url": "https://upload.wikimedia.org/wikipedia/commons/a/af/Quercus_robur.jpg"
       }
     },
     {
@@ -24,7 +26,9 @@
           "Inputs: sunlight, carbon dioxide, and water",
           "Outputs: sugar (stored energy) and oxygen",
           "Happens in chloroplasts, using the green pigment chlorophyll"
-        ]
+        ],
+        "image_query": "photosynthesis diagram",
+        "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Photosynthesis_en.svg/960px-Photosynthesis_en.svg.png"
       }
     },
     {
@@ -51,7 +55,9 @@
           "Plants are the start of nearly every food chain",
           "The oxygen we breathe comes from photosynthesis",
           "Less plant life means less food energy and less oxygen"
-        ]
+        ],
+        "image_query": "food chain ecology",
+        "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Ecological_Pyramid.png/960px-Ecological_Pyramid.png"
       }
     },
     {

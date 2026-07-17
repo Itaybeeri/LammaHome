@@ -109,34 +109,38 @@ _FILL_SYSTEM = (
     "You write the content for one slide of a K-12 lesson. You are given the "
     "slide's pedagogical move and its intent. Fill only the requested fields. "
     "Match the reading level to the grade. Be factually accurate — a teacher "
-    "will show this to a class."
+    "will show this to a class. When the schema has an image_query field, give a "
+    "short, concrete search phrase for a real image or diagram (a thing, not a "
+    "sentence), and write the slide's other text so it reads well on its own — "
+    "do not say 'look at this picture' as if pointing at a specific image."
 )
 
 
-async def _fill_once(subject: str, grade: str, planned: PlannedSlide) -> dict | None:
-    schema = CONTENT_MODELS[planned.type]
-    prompt = (
+def _fill_prompt(subject: str, grade: str, planned: PlannedSlide) -> str:
+    return (
         f"Subject: {subject}\n"
         f"Grade: {grade}\n"
         f"Slide type: {planned.type}\n"
         f"Intent: {planned.intent}\n\n"
         f"Write this slide."
     )
-    content = await _generate(schema, _FILL_SYSTEM, prompt)
+
+
+async def _fill_once(subject: str, grade: str, planned: PlannedSlide) -> dict | None:
+    schema = CONTENT_MODELS[planned.type]
+    content = await _generate(schema, _FILL_SYSTEM, _fill_prompt(subject, grade, planned))
     return content.model_dump() if content is not None else None
 
 
 async def fill_slide(subject: str, grade: str, planned: PlannedSlide, slide_id: str) -> Slide:
     """Fill one slide: try, retry once, then fall back to a placeholder."""
     for _ in range(2):  # one attempt + one retry
-        content = await _fill_once(subject, grade, planned)
+        try:
+            content = await _fill_once(subject, grade, planned)
+        except Exception:
+            content = None  # transient API error -> retry, then placeholder
         if content is not None:
-            # For a video slide, resolve the model's search intent to a real,
-            # embeddable clip so the deck plays it inline (see resolve_video).
-            if planned.type == "video" and not content.get("video_url"):
-                url = await resolve_video(str(content.get("search_query") or f"{subject} {grade}"))
-                if url:
-                    content["video_url"] = url
+            await _attach_media(content, subject, grade)
             return Slide(id=slide_id, type=planned.type, intent=planned.intent, content=content)
     # Both attempts failed — keep the slot, let the teacher regenerate it (D-010).
     return Slide(
@@ -192,43 +196,118 @@ async def resolve_video(query: str) -> str | None:
     return None
 
 
+# Wikimedia asks for a descriptive User-Agent with contact info.
+_WIKI_HEADERS = {"User-Agent": "LammaLessonGenerator/1.0 (educational demo; itaybeeri@gmail.com)"}
+
+
+async def resolve_image(query: str) -> str | None:
+    """Return a real, free image URL for `query` from Wikipedia, or None."""
+    try:
+        async with httpx.AsyncClient(timeout=8, headers=_WIKI_HEADERS) as client:
+            res = await client.get(
+                "https://en.wikipedia.org/w/api.php",
+                params={
+                    "action": "query",
+                    "format": "json",
+                    "prop": "pageimages",
+                    "piprop": "thumbnail",
+                    "pithumbsize": "800",
+                    "generator": "search",
+                    "gsrsearch": query,
+                    "gsrlimit": "3",
+                    "gsrnamespace": "0",
+                },
+            )
+            pages = res.json().get("query", {}).get("pages", {})
+            for page in sorted(pages.values(), key=lambda p: p.get("index", 99)):
+                thumb = page.get("thumbnail", {}).get("source")
+                if thumb:
+                    return thumb
+    except Exception:
+        return None
+    return None
+
+
+async def _attach_media(content: dict, subject: str, grade: str) -> None:
+    """Enrich a slide's content with a real video and/or image, based on the
+    search intents the model produced. Best-effort — leaves it out on failure."""
+    if content.get("search_query") and not content.get("video_url"):
+        url = await resolve_video(str(content["search_query"]))
+        if url:
+            content["video_url"] = url
+    if content.get("image_query") and not content.get("image_url"):
+        url = await resolve_image(str(content["image_query"]))
+        if url:
+            content["image_url"] = url
+
+
 # --- Orchestration ----------------------------------------------------------
 
 
 async def generate_deck_events(subject: str, grade: str, demo: bool = False):
-    """Run the pipeline, yielding progress events so the UI can show what's
+    """Run the pipeline, yielding technical progress events (the exact prompt
+    sent to the model and the JSON it returned) so the UI can show what's
     happening behind the scenes. The final event is {"type": "done", "deck": …}."""
     if demo or _client is None:
         deck = load_fallback_deck()
-        yield {"type": "log", "message": "Using the pre-generated demo deck (no API call)."}
-        yield {"type": "outline", "moves": [s.type for s in deck.slides]}
+        yield {"type": "note", "message": "Demo mode — serving the pre-generated deck (no AI call)."}
+        yield {"type": "result", "stage": "outline",
+               "response": {"slides": [{"type": s.type, "intent": s.intent} for s in deck.slides]}}
         for s in deck.slides:
-            yield {"type": "slide", "slide_type": s.type, "status": s.status}
+            yield {"type": "result", "stage": "fill", "slide_type": s.type,
+                   "status": s.status, "response": s.content}
         yield {"type": "done", "deck": deck.model_dump()}
         return
 
-    yield {"type": "log", "message": f'Planning a lesson on "{subject}" for {grade}…'}
-    outline = await generate_outline(subject, grade)
-    yield {
-        "type": "outline",
-        "moves": [p.type for p in outline.slides],
-        "message": f"Outline: inferred {len(outline.slides)} slides.",
-    }
+    # Stage 1 — outline.
+    outline_prompt = f"Subject: {subject}\nGrade: {grade}\n\nPlan the lesson."
+    yield {"type": "call", "stage": "outline", "model": MODEL, "schema": "Outline",
+           "system": _OUTLINE_SYSTEM, "prompt": outline_prompt}
+    try:
+        outline = await generate_outline(subject, grade)
+    except Exception as e:
+        yield {"type": "error", "message": _friendly_error(e)}
+        return
+    yield {"type": "result", "stage": "outline", "response": outline.model_dump()}
 
-    yield {"type": "log", "message": f"Filling {len(outline.slides)} slides in parallel…"}
+    # Stage 2 — fill each slide (structured output, one call each, in parallel).
+    yield {"type": "note",
+           "message": f"Filling {len(outline.slides)} slides in parallel — one structured-output call each."}
+    for planned in outline.slides:  # show every request that goes out
+        yield {"type": "call", "stage": "fill", "model": MODEL,
+               "schema": CONTENT_MODELS[planned.type].__name__, "slide_type": planned.type,
+               "system": _FILL_SYSTEM, "prompt": _fill_prompt(subject, grade, planned)}
     tasks = [
         asyncio.create_task(fill_slide(subject, grade, planned, f"slide-{i + 1}"))
         for i, planned in enumerate(outline.slides)
     ]
     by_id: dict[str, Slide] = {}
-    for finished in asyncio.as_completed(tasks):  # emit each slide as it lands
+    for finished in asyncio.as_completed(tasks):  # emit each response as it lands
         slide = await finished
         by_id[slide.id] = slide
-        yield {"type": "slide", "slide_type": slide.type, "status": slide.status}
+        yield {"type": "result", "stage": "fill", "slide_type": slide.type,
+               "status": slide.status, "response": slide.content}
 
     slides = [by_id[f"slide-{i + 1}"] for i in range(len(outline.slides))]
     deck = Deck(subject=subject, grade=grade, slides=slides)
     yield {"type": "done", "deck": deck.model_dump()}
+
+
+def _friendly_error(e: Exception) -> str:
+    """Turn an Anthropic/API exception into a message the teacher can act on."""
+    import anthropic
+
+    if isinstance(e, anthropic.AuthenticationError):
+        return "The API key is invalid. Check ANTHROPIC_API_KEY in backend/.env, or use demo mode."
+    if isinstance(e, anthropic.PermissionDeniedError):
+        return "The API key lacks access to this model. Check the key, or use demo mode."
+    if isinstance(e, anthropic.RateLimitError):
+        return "Rate limited by the API. Wait a moment and retry, or use demo mode."
+    if isinstance(e, anthropic.BadRequestError) and "credit" in str(e).lower():
+        return "The account is out of credit. Add credit at console.anthropic.com, or use demo mode."
+    if isinstance(e, anthropic.APIConnectionError):
+        return "Couldn't reach the API (network). Check your connection, or use demo mode."
+    return f"AI request failed: {e}. You can switch to demo mode instead."
 
 
 async def generate_deck(subject: str, grade: str, demo: bool = False) -> Deck:
@@ -264,12 +343,21 @@ async def regenerate_slide_events(
 ):
     """Streaming form of regenerate_slide — yields progress, ends with
     {"type": "done", "slide": …}."""
-    if target_type and target_type != slide.type:
-        yield {"type": "log", "message": f"Regenerating as a {target_type} (was {slide.type})…"}
+    new_type = target_type or slide.type
+    if not demo and _client is not None:
+        planned = PlannedSlide(type=new_type, intent=slide.intent)
+        yield {"type": "call", "stage": "fill", "model": MODEL,
+               "schema": CONTENT_MODELS[new_type].__name__, "slide_type": new_type,
+               "system": _FILL_SYSTEM, "prompt": _fill_prompt(subject, grade, planned)}
     else:
-        yield {"type": "log", "message": f"Regenerating the {slide.type} slide…"}
-    new = await regenerate_slide(subject, grade, slide, target_type, demo)
-    yield {"type": "slide", "slide_type": new.type, "status": new.status}
+        yield {"type": "note", "message": f"Demo mode — swapping in a {new_type} slide."}
+    try:
+        new = await regenerate_slide(subject, grade, slide, target_type, demo)
+    except Exception as e:
+        yield {"type": "error", "message": _friendly_error(e)}
+        return
+    yield {"type": "result", "stage": "fill", "slide_type": new.type,
+           "status": new.status, "response": new.content}
     yield {"type": "done", "slide": new.model_dump()}
 
 

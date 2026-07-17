@@ -28,12 +28,20 @@ SlideType = Literal[
 class HookContent(BaseModel):
     title: str
     hook: str = Field(description="An attention-grabbing question or scenario.")
+    image_query: str = Field(
+        description="A short, concrete search phrase for a helpful image "
+        "(e.g. 'Great Pyramid of Giza'). The backend resolves it to a real image."
+    )
 
 
 class ConceptContent(BaseModel):
     title: str
     explanation: str = Field(description="A clear explanation at the target reading level.")
     key_points: list[str] = Field(description="2-4 short takeaways.")
+    image_query: str = Field(
+        description="A short, concrete search phrase for a diagram or image that "
+        "illustrates this concept (e.g. 'photosynthesis diagram')."
+    )
 
 
 class CheckContent(BaseModel):

@@ -112,9 +112,17 @@ button.danger { color: #e5385b; }
 .process-panel h3 { margin: 0 0 12px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
 .process-log { list-style: none; margin: 0; padding: 0; font-size: 13px; display: flex; flex-direction: column; gap: 8px; max-height: 62vh; overflow: auto; }
 .process-log .ev { padding: 8px 10px; border-radius: 8px; background: #faf9fd; border: 1px solid var(--rule); animation: fadein 0.2s ease; }
-.process-log .ev-outline { background: #eef4ff; }
-.process-log .moves { display: block; margin-top: 4px; color: #555; font-weight: 700; }
-.process-log .done { font-weight: 700; }
+.ev-note { color: #555; background: transparent !important; border: none !important; padding: 4px 2px !important; }
+.ev-call { border-left: 3px solid #3a86ff; }
+.ev-result { border-left: 3px solid #2ea043; }
+.ev-error { border-left: 3px solid #e5385b; background: #fdecec !important; color: #a11; font-weight: 600; }
+.ev-done { font-weight: 700; }
+.ev-head { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-weight: 700; font-size: 12px; }
+.ev .tag { font-weight: 600; font-size: 11px; background: #ecebf3; color: #444; padding: 1px 6px; border-radius: 6px; }
+.ev .tag.warn { background: #ffe3e3; color: #a11; }
+.ev details { margin-top: 6px; }
+.ev summary { cursor: pointer; font-size: 12px; color: #3a86ff; }
+.ev pre { margin: 6px 0 0; padding: 8px; background: #1e1e2e; color: #d6d6e0; border-radius: 6px; font-size: 11px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; max-height: 220px; overflow: auto; }
 .spinner { width: 12px; height: 12px; border: 2px solid #e0ddf0; border-top-color: #3a86ff; border-radius: 50%; display: inline-block; animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
@@ -159,6 +167,7 @@ button.danger { color: #e5385b; }
   margin-bottom: 18px;
 }
 .slide-body h2 { margin: 0 0 12px; font-size: 28px; color: var(--bold, var(--ink)); }
+.slide-img { display: block; max-width: 100%; max-height: 300px; margin: 0 auto 18px; border-radius: 12px; object-fit: contain; background: #fff; }
 .slide-body .lead { font-size: 20px; }
 .slide-body .failed { color: #e5385b; }
 .slide-body ul { padding-left: 20px; }

@@ -1,7 +1,7 @@
 import type { ProgressEvent } from "../api";
 
-// A live "behind the scenes" panel: shows the pipeline events streamed from the
-// backend as a deck is generated or a slide is regenerated.
+// A live "behind the scenes" panel showing the real pipeline: the prompt sent
+// to the model and the JSON it returned, per call.
 
 export default function ProcessPanel({ log, busy }: { log: ProgressEvent[]; busy: boolean }) {
   return (
@@ -9,9 +9,7 @@ export default function ProcessPanel({ log, busy }: { log: ProgressEvent[]; busy
       <h3>Behind the scenes {busy && <span className="spinner" aria-label="working" />}</h3>
       <ol className="process-log">
         {log.map((ev, i) => (
-          <li key={i} className={`ev ev-${ev.type}`}>
-            {render(ev)}
-          </li>
+          <li key={i}>{render(ev)}</li>
         ))}
       </ol>
     </aside>
@@ -20,23 +18,47 @@ export default function ProcessPanel({ log, busy }: { log: ProgressEvent[]; busy
 
 function render(ev: ProgressEvent) {
   switch (ev.type) {
-    case "log":
-      return <span>{ev.message}</span>;
-    case "outline":
+    case "note":
+      return <div className="ev ev-note">{ev.message}</div>;
+
+    case "call":
       return (
-        <span>
-          🧭 {ev.message ?? "Outline ready"}
-          {ev.moves && <span className="moves">{ev.moves.join(" → ")}</span>}
-        </span>
+        <div className="ev ev-call">
+          <div className="ev-head">
+            → {ev.stage} request
+            {ev.model && <span className="tag">{ev.model}</span>}
+            {ev.schema && <span className="tag">schema: {ev.schema}</span>}
+            {ev.slide_type && <span className="tag">{ev.slide_type}</span>}
+          </div>
+          <details>
+            <summary>prompt sent</summary>
+            <pre>
+              {ev.system ? `SYSTEM:\n${ev.system}\n\n` : ""}
+              {`USER:\n${ev.prompt ?? ""}`}
+            </pre>
+          </details>
+        </div>
       );
-    case "slide":
+
+    case "result":
       return (
-        <span>
-          {ev.status === "failed" ? "⚠️" : "✅"} {ev.slide_type}
-          {ev.status === "failed" ? " — placeholder (regenerate)" : " ready"}
-        </span>
+        <div className="ev ev-result">
+          <div className="ev-head">
+            ← {ev.stage} response
+            {ev.slide_type && <span className="tag">{ev.slide_type}</span>}
+            {ev.status === "failed" && <span className="tag warn">⚠ placeholder</span>}
+          </div>
+          <details>
+            <summary>JSON returned</summary>
+            <pre>{JSON.stringify(ev.response, null, 2)}</pre>
+          </details>
+        </div>
       );
+
+    case "error":
+      return <div className="ev ev-error">⚠ {ev.message}</div>;
+
     case "done":
-      return <span className="done">🎉 Done</span>;
+      return <div className="ev ev-done">🎉 Done</div>;
   }
 }
