@@ -16,8 +16,10 @@ fallback deck instead — so the app runs (and the demo is safe) without a key.
 import asyncio
 import json
 import os
+import re
 from pathlib import Path
 
+import httpx
 from anthropic import AsyncAnthropic
 from pydantic import BaseModel
 
@@ -66,14 +68,22 @@ async def _generate(schema: type[BaseModel], system: str, prompt: str) -> BaseMo
 # --- Stage 1: outline -------------------------------------------------------
 
 _OUTLINE_SYSTEM = (
-    "You are an experienced K-12 curriculum designer. Given a subject and a "
-    "grade level, plan a single class lesson as an ordered list of pedagogical "
-    "moves. Use these move types: hook, concept, check-for-understanding, "
-    "exit-ticket, video. Every lesson opens with a hook, teaches one or two "
-    "concepts, verifies understanding with a check, and closes with an "
-    "exit-ticket. Include a video move only when a short clip would genuinely "
-    "help (e.g. a process worth seeing). Aim for 5-7 slides total. Keep the "
-    "reading level appropriate to the grade."
+    "You are an experienced K-12 curriculum designer. Plan a single class lesson "
+    "for the given subject and grade as an ordered list of pedagogical moves. The "
+    "move types are: hook, concept, check-for-understanding, exit-ticket, video.\n\n"
+    "YOU decide how many slides the lesson needs and how to sequence the moves — "
+    "let the topic drive it, not a fixed template. A simple topic may need only a "
+    "few slides; a rich or multi-part topic may need many. Use each move type as "
+    "often as it helps: several concepts for a big idea, a check right after a "
+    "tricky one, a video when seeing the thing matters, even more than one hook "
+    "or check if it serves the lesson. There is no required shape, and no fixed "
+    "length — most lessons land around 4 to 8 slides, but use fewer for a simple "
+    "topic and more for a rich one; let the content decide.\n\n"
+    "Good pedagogy still applies: open in a way that engages or activates prior "
+    "knowledge, build understanding in a sensible order, verify it along the way, "
+    "and end with something that consolidates or lets the teacher gauge learning. "
+    "Match the depth and reading level to the grade. Give each slide a one-line "
+    "intent describing what it should accomplish."
 )
 
 
@@ -121,6 +131,12 @@ async def fill_slide(subject: str, grade: str, planned: PlannedSlide, slide_id: 
     for _ in range(2):  # one attempt + one retry
         content = await _fill_once(subject, grade, planned)
         if content is not None:
+            # For a video slide, resolve the model's search intent to a real,
+            # embeddable clip so the deck plays it inline (see resolve_video).
+            if planned.type == "video" and not content.get("video_url"):
+                url = await resolve_video(str(content.get("search_query") or f"{subject} {grade}"))
+                if url:
+                    content["video_url"] = url
             return Slide(id=slide_id, type=planned.type, intent=planned.intent, content=content)
     # Both attempts failed — keep the slot, let the teacher regenerate it (D-010).
     return Slide(
@@ -130,6 +146,50 @@ async def fill_slide(subject: str, grade: str, planned: PlannedSlide, slide_id: 
         content={"title": "Couldn't generate this slide", "note": "Try regenerating it."},
         status="failed",
     )
+
+
+# --- Video resolution -------------------------------------------------------
+# The model returns a *search intent* for video slides, never a URL (it would
+# hallucinate dead links). We resolve that intent to a real, embeddable clip by
+# searching YouTube (keyless) and verifying each candidate via oEmbed. This is
+# the "embedded-video generator" — a production version would use the YouTube
+# Data API instead of scraping the results page.
+
+_YT_ID_RE = re.compile(r'"videoId":"([A-Za-z0-9_-]{11})"')
+_YT_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Cookie": "CONSENT=YES+1",  # skip the EU consent interstitial
+}
+
+
+async def resolve_video(query: str) -> str | None:
+    """Return an embeddable YouTube embed URL for `query`, or None on failure."""
+    try:
+        async with httpx.AsyncClient(timeout=8, headers=_YT_HEADERS) as client:
+            res = await client.get(
+                "https://www.youtube.com/results",
+                params={"search_query": query, "hl": "en", "gl": "US"},
+            )
+            # Dedup the first few videoIds from the search page.
+            ids: list[str] = []
+            for m in _YT_ID_RE.finditer(res.text):
+                if m.group(1) not in ids:
+                    ids.append(m.group(1))
+                if len(ids) >= 5:
+                    break
+            # Return the first one that oEmbed confirms is embeddable.
+            for vid in ids:
+                oe = await client.get(
+                    "https://www.youtube.com/oembed",
+                    params={"url": f"https://www.youtube.com/watch?v={vid}", "format": "json"},
+                )
+                if oe.status_code == 200:
+                    return f"https://www.youtube.com/embed/{vid}"
+    except Exception:
+        return None  # network hiccup / markup change -> UI shows the search link
+    return None
 
 
 # --- Orchestration ----------------------------------------------------------
