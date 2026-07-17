@@ -1,0 +1,13 @@
+# Personal interview-prep notes — never ship to the submission repo
+INTERVIEW-PREP.md
+
+# Deps / build / env — filled in properly once the stack is chosen
+node_modules/
+dist/
+build/
+.env
+.env.local
+__pycache__/
+*.pyc
+.venv/
+venv/

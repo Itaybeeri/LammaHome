@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Home Assignment - Fullstack Engineer at Lamma</title>
+<style>
+  :root {
+    --bg: #fbfaf7;
+    --paper: #ffffff;
+    --ink: #1a1a1a;
+    --ink-soft: #4a4a4a;
+    --ink-faint: #6b6b6b;
+    --accent: #1f5f47;
+    --accent-soft: #e8efe9;
+    --rule: #e6e3dc;
+    --callout: #f3efe6;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.65;
+  }
+  main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 72px 32px 96px;
+  }
+  header {
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 28px;
+    margin-bottom: 40px;
+  }
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-size: 34px;
+    line-height: 1.2;
+    font-weight: 700;
+    margin: 0 0 14px;
+    letter-spacing: -0.01em;
+  }
+  .lede {
+    color: var(--ink-soft);
+    font-size: 17px;
+    margin: 0;
+  }
+  h2 {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 48px 0 14px;
+    letter-spacing: -0.005em;
+  }
+  h2 + p, h2 + ul, h2 + ol { margin-top: 0; }
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 24px 0 6px;
+    color: var(--ink);
+  }
+  p { margin: 0 0 14px; }
+  ul, ol {
+    margin: 0 0 14px;
+    padding-left: 22px;
+  }
+  li { margin: 6px 0; }
+  li strong { color: var(--ink); }
+  a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  a:hover { text-decoration-thickness: 2px; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.92em;
+    background: var(--callout);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .callout {
+    background: var(--callout);
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    margin: 20px 0 24px;
+    border-radius: 0 4px 4px 0;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+  .schedule {
+    margin: 14px 0 18px;
+    border-top: 1px solid var(--rule);
+  }
+  .schedule .row {
+    display: flex;
+    gap: 18px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .schedule .t {
+    flex: 0 0 64px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .schedule .d {
+    flex: 1;
+    color: var(--ink-soft);
+  }
+  .rubric li { margin: 10px 0; }
+  .rubric li strong { display: inline; }
+  footer {
+    margin-top: 64px;
+    padding-top: 28px;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-faint);
+    font-size: 15px;
+  }
+  footer p { margin: 4px 0; }
+  .sig {
+    margin-top: 18px;
+    font-style: italic;
+    color: var(--ink-soft);
+  }
+  @media (max-width: 600px) {
+    main { padding: 48px 22px 72px; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 20px; margin-top: 40px; }
+    body { font-size: 16px; }
+    .schedule .t { flex: 0 0 56px; }
+  }
+  @media print {
+    body { background: #fff; }
+    main { padding: 24px; max-width: 100%; }
+    a { color: var(--ink); text-decoration: none; }
+    .callout { background: #f5f5f5; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Lamma - Fullstack Engineer</div>
+    <h1>Home Assignment</h1>
+    <p class="lede">We want to learn how you think and how you tackle a fullstack problem end-to-end. We're not looking for a polished product - we're looking at your reasoning, your judgment, and how you collaborate with AI tools to ship something real.</p>
+  </header>
+
+  <h2>The task</h2>
+  <p>Build an <strong>AI-powered presentation generator</strong>.</p>
+  <p>A user provides a prompt describing the presentation or video they want. Your system generates a presentation or video output based on that prompt.</p>
+  <p>What "presentation or video" means is <strong>up to you</strong>. Define the user. Decide what the output looks like. Defend your choices.</p>
+
+  <h2>What you'll build</h2>
+  <p>The required scope:</p>
+  <ol>
+    <li>A <strong>web UI</strong> where a user can input a prompt.</li>
+    <li>An <strong>AI-driven generation pipeline</strong> that turns the prompt into presentation content.</li>
+    <li>A <strong>viewable output</strong> the user can see or play in the browser.</li>
+  </ol>
+
+  <h2>Bonuses</h2>
+  <p>Optional. Pick whatever interests you - one done well beats three done superficially.</p>
+  <ul>
+    <li><strong>An editor layer</strong> - let the user tweak the generated content before finalizing.</li>
+    <li><strong>Modular output</strong> - explore how the output could be extensible. For example, embedding YouTube videos, interactive elements, or plugin-style slide types.</li>
+  </ul>
+
+  <h2>Time budget</h2>
+  <p>We expect this to take <strong>5 – 10 hours of work</strong> over <strong>7 calendar days</strong>.</p>
+  <div class="callout">
+    <p>Again - we're not looking for a production grade product. We just want to see how you think :)</p>
+  </div>
+
+  <h2>Tech stack</h2>
+  <p>At Lamma we use <strong>Python on the backend</strong> and <strong>React on the frontend</strong>. You're welcome to use them, or to choose anything else you're productive with. Your choice is part of what we'll discuss in the follow-up.</p>
+
+  <h2>AI tools</h2>
+  <p>We expect you to use AI tools. This is how we work at Lamma. Use whatever you're productive with - Cursor, Claude Code, Copilot, ChatGPT, anything. We're not testing your ability to work without AI; we're testing your ability to work well <em>with</em> AI.</p>
+  <p>In your slides (see slide deck below), tell us what you used, where it helped, and where it didn't. Be honest about the limits.</p>
+
+  <h3>AI API access</h3>
+  <p>You'll need an API key for a generative AI provider (OpenAI, Anthropic, Google, etc.). Bring your own. This is just easier for us - if cost is a real blocker, reach out.</p>
+
+  <h2>Deliverables</h2>
+  <p>Submit these together at the 7-day mark:</p>
+  <ol>
+    <li><strong>The code.</strong> A GitHub repo, ZIP, or other accessible form - your choice. Just make sure both Itay and Yoav can access it (emails below). Include a README explaining how to run it locally.</li>
+    <li><strong>A slide deck.</strong> Length and structure are your call. Suggested sections:
+      <ul>
+        <li>Architecture overview</li>
+        <li>Key design decisions</li>
+        <li>What works and what doesn't</li>
+        <li>How you worked with AI</li>
+        <li>What you'd do with more time</li>
+      </ul>
+    </li>
+  </ol>
+
+  <h2>The follow-up session</h2>
+  <p>After we receive your submission, we'll schedule a <strong>60-minute live session</strong> with Itay and Yoav. We'll review your slides and code beforehand, so the time goes to depth, not setup.</p>
+  <div class="schedule">
+    <div class="row"><div class="t">5 min</div><div class="d">Intro</div></div>
+    <div class="row"><div class="t">10 min</div><div class="d">Live demo - you drive</div></div>
+    <div class="row"><div class="t">15 min</div><div class="d">Slide walkthrough</div></div>
+    <div class="row"><div class="t">15 min</div><div class="d">Code walkthrough - screen-share, you navigate</div></div>
+    <div class="row"><div class="t">10 min</div><div class="d">Q&amp;A</div></div>
+    <div class="row"><div class="t">5 min</div><div class="d">Your questions for us</div></div>
+  </div>
+
+  <h2>How we evaluate</h2>
+  <div class="callout">
+    <p>We don't expect a polished or production-ready product. UI aesthetics, bugs, and rough edges are <strong>not</strong> what we're evaluating. We want to see <strong>how you think, how you tackle a fullstack problem end-to-end, how you collaborate with AI tools, and how well you understand the code you ship.</strong></p>
+  </div>
+  <h2>Questions</h2>
+  <p>If you have a question during the week, reach out to Itay:</p>
+  <ul>
+    <li>Email - <a href="mailto:itay@lamma-ed.com">itay@lamma-ed.com</a></li>
+    <li>WhatsApp - <a href="https://wa.me/972542199602">+972 54 219 9602</a></li>
+  </ul>
+  <p>That said: many of the ambiguities in this document are intentional. Part of what we're evaluating is how you interpret and frame the problem yourself. When in doubt, <strong>make a decision, document it as an assumption in your slides, and keep moving.</strong></p>
+
+  <h2>Submission &amp; after the process</h2>
+  <p>Send your code link and slides to both of us by the 7-day deadline:</p>
+  <ul>
+    <li>Itay - <a href="mailto:itay@lamma-ed.com">itay@lamma-ed.com</a></li>
+    <li>Yoav - <a href="mailto:yoav@lamma-ed.com">yoav@lamma-ed.com</a></li>
+  </ul>
+  <p>You're free to share your solution publicly afterward - on GitHub, your portfolio, anywhere you like.</p>
+
+  <footer>
+    <p class="sig">Looking forward to seeing what you build.</p>
+    <p>- Itay &amp; Yoav</p>
+  </footer>
+</main>
+</body>
+</html>
