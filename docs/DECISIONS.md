@@ -12,6 +12,50 @@ Status tags: `LOCKED` = decided, defend it. `OPEN` = still deciding.
 
 ---
 
+## D-009 · Demo scenario: one thin prompt, peak = regenerate a slide as a different pedagogical move  · LOCKED
+
+- **Chosen:** The live demo runs ONE scripted scenario. Prompt = `photosynthesis for 7th
+  grade` (subject + grade only). Arc: type prompt → AI shows the **inferred plan** (~6 slides,
+  the moves, ~40 min) → click through the deck → hit a `video` slide ("plugin, swappable
+  generator") → **PEAK: on a `concept` slide, regenerate it as a `check-for-understanding`**
+  ("they won't get this from explanation alone — let me verify they did") → inline-edit one
+  slide's text. Runs against a **pre-generated fallback deck** so latency / API flakiness can't
+  sink it.
+- **Rejected:** (a) rich prompt where the teacher specifies structure/length — less magic,
+  makes the pipeline look like templating; (b) "regenerate *simpler*" as the peak — only shows
+  a text transformation any LLM does, not *my* slide model; (c) a clever topic (e.g. French
+  Revolution) — steals the audience's attention onto whether the AI got the *domain* right.
+- **Why:** the peak is the one beat that can *only* exist because slides are pedagogical moves
+  (D-004) — a domain-expert audience (Itay + Yoav) reads it instantly. Thin prompt shows the AI
+  doing *pedagogical reasoning* (Lamma's whole pitch); grade is the one required input that
+  visibly drives reading level. Cliché topic = clear glass, attention stays on the system.
+  `concept → check` is the most natural real-teacher move and the *least* arc-breaking swap
+  (a lesson wants a check after a concept).
+- **Input decision (locked here):** teacher types **subject + grade**; the AI infers
+  structure/length. (Chosen over "just the idea" = too much guessing on grade, which is the
+  factual-stakes axis; and over "idea + grade + structure" = kills the reasoning demo.)
+- **Honest limit to *bait* in Q&A:** changing one slide's move can break the lesson arc; v1
+  swaps in place, v2 would re-validate the whole outline after an edit. (= the "how you think
+  about failure" signal, handed over for free.)
+
+## D-008 · Generation strategy: outline-then-fill, not one-shot  · LOCKED
+
+- **Chosen:** Two-stage pipeline. **Stage 1** generates an *outline* (ordered list of moves +
+  a one-line intent per slide) from subject + grade. **Stage 2** *fills* each slide
+  independently (async / in parallel) using that outline as context.
+- **Rejected:** one-shot whole-deck generation (a single call returns the entire deck JSON).
+- **Why:** it makes every locked feature *cheap* instead of bolted-on. "Regenerate this slide"
+  = re-run *fill* for one slide; "regenerate as a different move" (D-009 peak) = re-run *fill*
+  with a different target type — both fall out for free. Failure handling shrinks to **one
+  slide's** JSON (validate + retry per slide, small blast radius) instead of a whole deck's.
+  The outline is the artifact the demo shows in beat 2. FastAPI's async (D-007) fills slides in
+  parallel, softening the only real downside (more calls = more latency).
+- **Cost / mitigation:** outline↔fill *drift* — a slide can wander off its planned intent.
+  Mitigated by passing the outline into each fill call as context.
+- **Provenance:** this fell OUT of the demo (D-009). Showing the plan *and* per-slide
+  regeneration both require a plan-as-artifact + per-slide-generation primitive — which *is*
+  outline-then-fill. The demo forced the architecturally coherent choice.
+
 ## D-007 · Tech stack: match Lamma — Python backend + React frontend  · LOCKED
 
 - **Chosen:** Python backend, React frontend — deliberately mirroring Lamma's stack.
@@ -28,16 +72,21 @@ Status tags: `LOCKED` = decided, defend it. `OPEN` = still deciding.
 
 - **Chosen (Tier 2):** The teacher can edit a slide's text, **regenerate a single slide**
   ("redo this, simpler"), and delete / reorder slides.
-- **Rejected:** Tier 3 full editability (add arbitrary slides, change a slide's type,
-  drag-canvas editing, undo/redo) — and Tier 1 (text-only).
+- **Rejected:** Tier 3 full editability (add arbitrary slides, **manual** canvas type-change
+  via a dropdown, drag-canvas editing, undo/redo) — and Tier 1 (text-only).
+- **Boundary clarified (see D-009):** "regenerate this slide as a *different pedagogical move*"
+  is IN scope and stays Tier 2 — it's an **AI** operation (re-run the fill step with a
+  different target type per D-008), *not* the manual canvas type-change we rejected. Same
+  machinery as per-slide regenerate + one parameter; costs ~nothing on top of Tier 2.
 - **Why:** The editor's *purpose* is teacher **accountability** — fix what the AI got wrong
   before it's in front of 30 kids — not rebuilding Google Slides. Tier 2 satisfies that and
   *feels* like full control in a demo, at ~half the cost. Crucially, full editing would pour
   the scarce 5–10h budget into UI plumbing they **don't** grade, starving the pipeline they
   **do**. The cut is itself a strong interview answer (brief says: document cuts as
   assumptions).
-- **Killer feature:** "regenerate this one slide" proves the pipeline is addressable at slide
-  granularity — the best demo moment for an *AI* product, and it lives in Tier 2.
+- **Killer feature:** "regenerate this slide **as a different pedagogical move**" (D-009 peak)
+  proves the pipeline is addressable at slide granularity *and* that the slide model is real —
+  the best demo moment for an *AI* product, and it lives in Tier 2.
 
 ## D-005 · User = K-12 teacher prepping a lesson  · LOCKED
 
@@ -103,13 +152,13 @@ Status tags: `LOCKED` = decided, defend it. `OPEN` = still deciding.
 
 ## Open decisions (not yet made — placeholders so they don't get lost)
 
-- **D-00x · The user.** Leaning K-12 teacher (Lamma's real user). Not locked — waiting on a
-  demo scenario I actually find compelling. `OPEN`
-- **D-00x · What *is* a slide?** Generic (`title/bullets/image`) vs. pedagogical "moves"
-  (hook / concept / check-for-understanding / exit-ticket). `OPEN`
-- **D-00x · Generation strategy.** One-shot whole deck vs. outline-then-fill-each-slide.
-  `OPEN`
-- **D-00x · Editor scope.** Edit text only vs. edit structure/slide types. `OPEN`
-- **D-00x · Generated vs. embedded video.** Design for generated, ship embedded? `OPEN`
-- **D-00x · Tech stack.** Their stack = Python backend + React frontend; my choice is
-  discussed in the follow-up. `OPEN`
+- **D-00x · Failure handling.** What happens when a *fill* call (D-008) returns invalid JSON:
+  validate against the slide-type schema, retry N times, then fall back to what? (Per-slide
+  blast radius, per D-008.) ← **next up.** `OPEN`
+- **D-00x · Generated vs. embedded video.** Design for generated, ship embedded? (§4.3 of
+  INTERVIEW-PREP.) `OPEN`
+- **D-00x · Slide-type "plugin" boundary in code.** What exactly each type owns (schema +
+  renderer + fill-prompt) and how a new type is registered. `OPEN`
+
+*Resolved and promoted above: the user (D-005), what a slide is (D-004), generation strategy
+(D-008), editor scope (D-006), tech stack (D-007), demo scenario + input shape (D-009).*
