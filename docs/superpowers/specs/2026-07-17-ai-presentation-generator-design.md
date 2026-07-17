@@ -180,6 +180,9 @@ signal.)
   betting the demo on a black box. Decide when building the video type.
 - **Exact plugin-registry shape** — settles itself when the first slide type is written.
 - **Persistence** — not required for the assignment; decks live in memory / client state.
+- **Deployment** — ships **local-only** by design (D-011); the brief asks for a local run and
+  doesn't grade production polish. With more time: containerize, put the pipeline behind a
+  rate-limited API on ECS/Lambda, move the key server-side, cache decks.
 
 ## 10. Deliverables mapping (so nothing is orphaned)
 

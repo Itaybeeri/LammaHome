@@ -12,6 +12,24 @@ Status tags: `LOCKED` = decided, defend it. `OPEN` = still deciding.
 
 ---
 
+## D-011 · Ship local-only — do not deploy; document the production path instead  · LOCKED
+
+- **Chosen:** Deliver a locally-run app (README + `run.ps1` / `run.sh`). Do **not** deploy to
+  AWS or any host.
+- **Rejected:** Standing the app up at a public URL (AWS ECS / Amplify / Lambda, etc.).
+- **Why:** the brief asks for a repo + "a README explaining how to run it **locally**," grades
+  reasoning / end-to-end / code-understanding, and *explicitly* does not reward production
+  polish ("we're not looking for a production-grade product"). Deploying would spend ~2-4 of the
+  5-10h budget on **ungraded** infra — the wrong taste under "one done well beats three done
+  superficially." It's also *worse* for the demo: a live cloud + live-API URL is **more** fragile
+  than driving locally against the pre-generated fallback deck (D-009), reintroducing the exact
+  latency/flakiness risk that deck was built to remove. BYO-key + public deploy adds
+  secret-management and metered-cost risk for zero upside.
+- **With more time (the interview answer):** containerize the two services; put the pipeline
+  behind a rate-limited API on ECS/Lambda; move the key server-side; cache generated decks; add
+  persistence. Deciding *not* to build this is itself the signal — knowing when infra is scope
+  creep vs. when it earns its cost.
+
 ## D-010 · Failure handling: retry once, then a regeneratable placeholder slide  · LOCKED
 
 - **Chosen:** Prevent → validate → retry → placeholder. (1) Generate each slide via Claude
