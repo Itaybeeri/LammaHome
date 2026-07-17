@@ -24,7 +24,7 @@ app = FastAPI(title="Lamma Presentation Generator")
 # The Vite dev server runs on a different port; allow it in dev.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5273"],
     allow_methods=["*"],
     allow_headers=["*"],
 )

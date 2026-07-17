@@ -45,7 +45,7 @@ uvicorn app.main:app --reload
 Without a key in `.env`, the backend serves `backend/fallback_deck.json` instead
 of calling Claude — everything still works, you just get the demo deck.
 
-### 2. Frontend (port 5173)
+### 2. Frontend (port 5273)
 
 ```bash
 cd frontend
@@ -53,7 +53,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173. The Vite dev server proxies `/api/*` to the backend.
+Open http://localhost:5273. The Vite dev server proxies `/api/*` to the backend.
 
 ## Where things live
 
