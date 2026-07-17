@@ -12,6 +12,28 @@ Status tags: `LOCKED` = decided, defend it. `OPEN` = still deciding.
 
 ---
 
+## D-010 · Failure handling: retry once, then a regeneratable placeholder slide  · LOCKED
+
+- **Chosen:** Prevent → validate → retry → placeholder. (1) Generate each slide via Claude
+  **tool-use / JSON schema** so malformed output is rare *by construction* (the D-007 reason
+  for picking Claude). (2) **Validate** each fill result against that slide type's Pydantic
+  schema. (3) On failure, **retry once**, feeding the validation error back to the model. (4)
+  On final failure, **keep the outline slot** and render a placeholder card ("this slide
+  couldn't be generated — regenerate") that the teacher re-runs with the **existing regenerate
+  action**.
+- **Rejected:** (a) *silently drop* the failed slide — briefly chosen, then reversed: it hides
+  the failure and thins the lesson arc (worst case drops a load-bearing slide). (b) Fail the
+  *whole deck* on one bad slide — worst UX, throws away good slides.
+- **Why:** the failure path **reuses the happy path** — a failed slide is just a slide waiting
+  to be regenerated, the *same button* as the D-009 peak / D-006 killer feature. No special
+  "error mode." Failure stays **visible** (accountability thesis, D-005). Keeping the outline
+  slot means the deck never thins, which resolves "does the flow still read reasonably after a
+  failure?" better than drop did — the load-bearing-slide edge case disappears. Per-slide blast
+  radius (D-008) makes it cheap: one slot, one retry, one card.
+- **Interview line:** "I didn't special-case failure — I made the unhappy path fall back onto
+  a tool I already had. The regenerate button has two triggers: user intent, and generation
+  failure."
+
 ## D-009 · Demo scenario: one thin prompt, peak = regenerate a slide as a different pedagogical move  · LOCKED
 
 - **Chosen:** The live demo runs ONE scripted scenario. Prompt = `photosynthesis for 7th
