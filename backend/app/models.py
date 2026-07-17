@@ -106,6 +106,10 @@ class Deck(BaseModel):
 class GenerateRequest(BaseModel):
     subject: str
     grade: str
+    demo: bool = Field(
+        default=False,
+        description="If true, serve the pre-generated demo deck instead of calling the AI.",
+    )
 
 
 class RegenerateRequest(BaseModel):
@@ -115,4 +119,8 @@ class RegenerateRequest(BaseModel):
     target_type: SlideType | None = Field(
         default=None,
         description="If set, regenerate the slide as this different pedagogical move.",
+    )
+    demo: bool = Field(
+        default=False,
+        description="If true, use the demo deck instead of calling the AI.",
     )

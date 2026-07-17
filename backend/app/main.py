@@ -37,9 +37,11 @@ def health() -> dict:
 
 @app.post("/api/generate", response_model=Deck)
 async def generate(req: GenerateRequest) -> Deck:
-    return await pipeline.generate_deck(req.subject, req.grade)
+    return await pipeline.generate_deck(req.subject, req.grade, req.demo)
 
 
 @app.post("/api/regenerate", response_model=Slide)
 async def regenerate(req: RegenerateRequest) -> Slide:
-    return await pipeline.regenerate_slide(req.subject, req.grade, req.slide, req.target_type)
+    return await pipeline.regenerate_slide(
+        req.subject, req.grade, req.slide, req.target_type, req.demo
+    )

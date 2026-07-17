@@ -48,9 +48,15 @@ const GRADES = [
 export default function PromptBox({
   onGenerate,
   loading,
+  mode,
+  onModeChange,
+  liveApi,
 }: {
   onGenerate: (subject: string, grade: string) => void;
   loading: boolean;
+  mode: "ai" | "demo";
+  onModeChange: (m: "ai" | "demo") => void;
+  liveApi: boolean | null;
 }) {
   const [subject, setSubject] = useState("Photosynthesis");
   const [grade, setGrade] = useState("7th grade");
@@ -87,6 +93,31 @@ export default function PromptBox({
           ))}
         </select>
       </label>
+
+      {/* Choose the source: live Claude, or the pre-generated demo deck.
+          "Real AI" is disabled until a key is configured. */}
+      <div className="field">
+        <span className="field-label">Source</span>
+        <div className="mode-toggle" role="group" aria-label="Generation source">
+          <button
+            type="button"
+            className={mode === "ai" ? "active" : ""}
+            onClick={() => onModeChange("ai")}
+            disabled={liveApi === false}
+            title={liveApi === false ? "No API key configured" : undefined}
+          >
+            Real AI
+          </button>
+          <button
+            type="button"
+            className={mode === "demo" ? "active" : ""}
+            onClick={() => onModeChange("demo")}
+          >
+            Pre-generated demo
+          </button>
+        </div>
+      </div>
+
       <button type="submit" disabled={loading}>
         {loading ? "Generating..." : "Generate lesson"}
       </button>

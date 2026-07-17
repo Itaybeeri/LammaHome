@@ -48,7 +48,24 @@ header h1 {
   padding: 22px;
   box-shadow: 0 8px 24px rgba(120, 100, 180, 0.08);
 }
-.prompt-box label { display: flex; flex-direction: column; font-size: 13px; font-weight: 700; gap: 6px; }
+.prompt-box label,
+.prompt-box .field { display: flex; flex-direction: column; font-size: 13px; font-weight: 700; gap: 6px; }
+.field-label { font-size: 13px; font-weight: 700; }
+
+/* Segmented Real AI / Demo toggle */
+.mode-toggle { display: inline-flex; border: 2px solid var(--rule); border-radius: 10px; overflow: hidden; }
+.mode-toggle button {
+  border: none;
+  border-radius: 0;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  background: #fff;
+  color: #6a6a7a;
+}
+.mode-toggle button + button { border-left: 2px solid var(--rule); }
+.mode-toggle button.active { background: linear-gradient(90deg, #3a86ff, #8338ec); color: #fff; }
+.mode-toggle button:hover:not(:disabled):not(.active) { color: #3a86ff; }
 .prompt-box input,
 .prompt-box select { padding: 9px 12px; font-size: 15px; border: 2px solid var(--rule); border-radius: 10px; }
 .prompt-box input:focus,

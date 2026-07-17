@@ -135,8 +135,9 @@ async def fill_slide(subject: str, grade: str, planned: PlannedSlide, slide_id: 
 # --- Orchestration ----------------------------------------------------------
 
 
-async def generate_deck(subject: str, grade: str) -> Deck:
-    if _client is None:
+async def generate_deck(subject: str, grade: str, demo: bool = False) -> Deck:
+    # demo mode (or no key) -> serve the pre-generated deck, no API call.
+    if demo or _client is None:
         return load_fallback_deck()
 
     outline = await generate_outline(subject, grade)
@@ -150,13 +151,13 @@ async def generate_deck(subject: str, grade: str) -> Deck:
 
 
 async def regenerate_slide(
-    subject: str, grade: str, slide: Slide, target_type: str | None
+    subject: str, grade: str, slide: Slide, target_type: str | None, demo: bool = False
 ) -> Slide:
     """Re-run the fill step for a single slide. If target_type is given, the
     slide comes back as a different pedagogical move — same machinery, one
     parameter (DECISIONS D-006 / D-009)."""
-    if _client is None:
-        # No key: hand back a fallback slide of the requested type if we have one.
+    if demo or _client is None:
+        # Demo mode / no key: hand back a fallback slide of the requested type.
         fallback = load_fallback_deck()
         wanted = target_type or slide.type
         match = next((s for s in fallback.slides if s.type == wanted), None)

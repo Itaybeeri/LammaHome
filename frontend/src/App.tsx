@@ -10,20 +10,28 @@ export default function App() {
   const [busySlideId, setBusySlideId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [liveApi, setLiveApi] = useState<boolean | null>(null);
+  // Source: "ai" calls Claude, "demo" serves the pre-generated deck. Chosen in
+  // the UI so the live demo can run without depending on the API (D-009).
+  const [mode, setMode] = useState<"ai" | "demo">("ai");
 
-  // Tell the user whether they're seeing live AI output or the fallback deck.
+  // On load, find out whether a key is configured. If not, force demo mode.
   useEffect(() => {
     fetch("/api/health")
       .then((r) => r.json())
-      .then((d) => setLiveApi(d.live_api))
+      .then((d) => {
+        setLiveApi(d.live_api);
+        if (!d.live_api) setMode("demo");
+      })
       .catch(() => setLiveApi(null));
   }, []);
+
+  const demo = mode === "demo";
 
   async function handleGenerate(subject: string, grade: string) {
     setLoading(true);
     setError(null);
     try {
-      setDeck(await generateDeck(subject, grade));
+      setDeck(await generateDeck(subject, grade, demo));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -36,7 +44,7 @@ export default function App() {
     setBusySlideId(slide.id);
     setError(null);
     try {
-      const updated = await regenerateSlide(deck.subject, deck.grade, slide, targetType);
+      const updated = await regenerateSlide(deck.subject, deck.grade, slide, targetType, demo);
       setDeck({ ...deck, slides: deck.slides.map((s) => (s.id === slide.id ? updated : s)) });
     } catch (e) {
       setError((e as Error).message);
@@ -72,10 +80,16 @@ export default function App() {
         <p className="tagline">Type a subject and grade — get a clickable, editable lesson.</p>
       </header>
 
-      <PromptBox onGenerate={handleGenerate} loading={loading} />
+      <PromptBox
+        onGenerate={handleGenerate}
+        loading={loading}
+        mode={mode}
+        onModeChange={setMode}
+        liveApi={liveApi}
+      />
 
       {liveApi === false && (
-        <p className="banner">No API key set — showing the pre-generated demo deck.</p>
+        <p className="banner">No API key set — "Real AI" is disabled; using the demo deck.</p>
       )}
       {error && <p className="banner error">{error}</p>}
 
