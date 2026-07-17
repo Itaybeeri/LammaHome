@@ -95,6 +95,10 @@ Status tags: `LOCKED` = decided, defend it. `OPEN` = still deciding.
 - **Provenance:** this fell OUT of the demo (D-009). Showing the plan *and* per-slide
   regeneration both require a plan-as-artifact + per-slide-generation primitive — which *is*
   outline-then-fill. The demo forced the architecturally coherent choice.
+- **Update — the outline is fully AI-decided.** The outline prompt does *not* impose a fixed
+  template or length; the model chooses how many slides and which moves, in what order, per
+  topic (soft ~4-8 anchor). Same-topic decks vary; a math topic interleaves checks, a
+  history topic stacks concepts. The pipeline handles any N (ids `slide-1..N`).
 
 ## D-007 · Tech stack: match Lamma — Python backend + React frontend  · LOCKED
 
@@ -178,6 +182,11 @@ Status tags: `LOCKED` = decided, defend it. `OPEN` = still deciding.
   generated per need. This is the "modular output" bonus arrived at naturally, not checked off
   a list — which makes it defensible. (Generated-vs-embedded video is a separate open call,
   see INTERVIEW-PREP §4.3.)
+- **Update — the "embedded video generator" is now real.** The model returns a *search intent*
+  for video slides (never a URL — it would hallucinate dead links); the backend resolves that
+  to a real embeddable clip (keyless YouTube search + oEmbed verification), so live decks play
+  inline. Falls back to a "find on YouTube" search link if resolution fails. This is exactly the
+  "design for generated, ship embedded" story, fully wired: model = intent, backend = resolver.
 
 ## D-001 · Fresh, thin repo — not the personal template  · LOCKED
 
