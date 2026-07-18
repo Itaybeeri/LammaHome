@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SubjectCombo from "./SubjectCombo";
 
 // The whole input surface: a subject and a grade. Everything else about the
 // lesson (length, structure, which moves) is inferred by the AI.
@@ -71,17 +72,7 @@ export default function PromptBox({
     >
       <label>
         Subject
-        <input
-          list="subject-ideas"
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          placeholder="Pick one or type your own"
-        />
-        <datalist id="subject-ideas">
-          {SUBJECT_IDEAS.map((s) => (
-            <option key={s} value={s} />
-          ))}
-        </datalist>
+        <SubjectCombo value={subject} onChange={setSubject} options={SUBJECT_IDEAS} />
       </label>
       <label>
         Grade
