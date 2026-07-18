@@ -1,5 +1,5 @@
 import { useState } from "react";
-import SubjectCombo from "./SubjectCombo";
+import Dropdown from "./Dropdown";
 
 // The whole input surface: a subject and a grade. Everything else about the
 // lesson (length, structure, which moves) is inferred by the AI.
@@ -70,20 +70,20 @@ export default function PromptBox({
         if (subject.trim() && grade.trim()) onGenerate(subject.trim(), grade.trim());
       }}
     >
-      <label>
-        Subject
-        <SubjectCombo value={subject} onChange={setSubject} options={SUBJECT_IDEAS} />
-      </label>
-      <label>
-        Grade
-        <select value={grade} onChange={(e) => setGrade(e.target.value)}>
-          {GRADES.map((g) => (
-            <option key={g} value={g}>
-              {g}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="field">
+        <span className="field-label">Subject</span>
+        <Dropdown
+          value={subject}
+          onChange={setSubject}
+          options={SUBJECT_IDEAS}
+          editable
+          placeholder="Pick one or type your own"
+        />
+      </div>
+      <div className="field">
+        <span className="field-label">Grade</span>
+        <Dropdown value={grade} onChange={setGrade} options={GRADES} />
+      </div>
 
       {/* Choose the source: live Claude, or the pre-generated demo deck.
           "Real AI" is disabled until a key is configured. */}

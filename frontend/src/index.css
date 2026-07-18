@@ -71,13 +71,14 @@ header h1 {
 .prompt-box input:focus,
 .prompt-box select:focus { outline: none; border-color: #3a86ff; }
 
-/* Subject combobox: free-text input + a chevron that opens the full list */
+/* Shared dropdown (Subject + Grade): input + a chevron that opens the full list */
 .combo { position: relative; display: inline-block; }
-.combo input { width: 240px; padding-right: 34px; }
+.combo input { width: 210px; padding-right: 34px; }
+.combo input.readonly { cursor: pointer; background: #fff; }
 .combo-toggle {
-  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
-  border: none; background: transparent; padding: 2px 6px; font-size: 13px;
-  color: #6a6a7a; cursor: pointer;
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  border: none; background: transparent; padding: 4px 8px; font-size: 12px;
+  color: #4a4a5a; cursor: pointer; line-height: 1;
 }
 .combo-toggle:hover:not(:disabled) { color: #3a86ff; }
 .combo-list {

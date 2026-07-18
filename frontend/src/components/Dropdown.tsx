@@ -1,23 +1,27 @@
 import { useEffect, useRef, useState } from "react";
 
-// A subject picker that behaves like a dropdown AND a free-text field: the
-// chevron opens the full list of ideas no matter what's already typed, and you
-// can still type anything. (A native <datalist> filters to matches, so it can't
-// show the whole list once a value is present.)
+// One dropdown used for both Subject and Grade so they look identical. The
+// chevron opens the FULL list regardless of the current value. With
+// editable=true (Subject) you can also type a custom value; otherwise it's
+// pick-from-list (Grade). Deliberately not wrapped in a <label> — a label
+// forwards clicks to its input and fights the chevron/list clicks.
 
-export default function SubjectCombo({
+export default function Dropdown({
   value,
   onChange,
   options,
+  editable = false,
+  placeholder,
 }: {
   value: string;
   onChange: (v: string) => void;
   options: string[];
+  editable?: boolean;
+  placeholder?: string;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close when clicking outside the control.
   useEffect(() => {
     function onDoc(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -29,15 +33,19 @@ export default function SubjectCombo({
   return (
     <div className="combo" ref={ref}>
       <input
+        className={editable ? undefined : "readonly"}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        readOnly={!editable}
+        placeholder={placeholder}
+        onChange={editable ? (e) => onChange(e.target.value) : undefined}
+        onFocus={editable ? () => setOpen(true) : undefined}
+        onClick={editable ? undefined : () => setOpen((o) => !o)}
         onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
-        placeholder="Pick one or type your own"
       />
       <button
         type="button"
         className="combo-toggle"
-        aria-label="Show subjects"
+        aria-label="Show options"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
@@ -49,7 +57,6 @@ export default function SubjectCombo({
             <li
               key={opt}
               className={opt === value ? "sel" : ""}
-              // mousedown (not click) so selection fires before input blur.
               onMouseDown={(e) => {
                 e.preventDefault();
                 onChange(opt);
