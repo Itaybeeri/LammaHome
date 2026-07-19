@@ -12,6 +12,23 @@ Status tags: `LOCKED` = decided, defend it. `OPEN` = still deciding.
 
 ---
 
+## D-012 · Everything is a block — slide types and pedagogy are composable, some custom  · LOCKED
+
+- **Chosen:** Two families of building blocks, each built-in-proven **and** user-extensible.
+  (1) **Slide-type blocks** — the typed built-in moves (hook/concept/…) plus teacher-defined
+  **custom types** (name + emoji + instruction) that fill a generic `CustomContent` schema and
+  render generically. (2) **Pedagogy blocks** — the lesson-planning rules, factored out of the
+  prompt into editable / toggleable / addable blocks the backend assembles into the system prompt.
+- **Rejected:** hardcoded slide types only (not extensible); a monolithic pedagogy prompt (not
+  tunable); a fully generic slide model (loses the typed, defensible built-ins).
+- **Why:** extends D-004 (moves) and D-008 (outline) into the coherent extensibility story the
+  founders asked to see. A custom block genuinely **enters the system** — the planner places it and
+  it renders — with *no new code* (verified: a custom `mini-game` slide was planned into a fractions
+  lesson and filled correctly). Pedagogy-as-blocks makes "AI that understands education" tunable by
+  educators, and surfaces the assembled prompt in the behind-the-scenes panel.
+- **Cost:** `slide.type` is now an open string (runtime-validated; unknown → `concept`) instead of
+  a compile-time Literal — a deliberate trade of some static safety for runtime extensibility.
+
 ## D-011 · Ship local-only — do not deploy; document the production path instead  · LOCKED
 
 - **Chosen:** Deliver a locally-run app (README + `run.ps1` / `run.sh`). Do **not** deploy to
