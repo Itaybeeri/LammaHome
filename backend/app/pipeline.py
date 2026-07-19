@@ -67,29 +67,51 @@ async def _generate(schema: type[BaseModel], system: str, prompt: str) -> BaseMo
 
 # --- Stage 1: outline -------------------------------------------------------
 
-_OUTLINE_SYSTEM = (
+# The fixed frame for planning a lesson. The *pedagogy* — the rules that shape
+# how a lesson is built — is factored out into editable blocks (below) that the
+# teacher can toggle / edit / add / remove. The outline system prompt is
+# assembled from this base plus the enabled blocks (see outline_system).
+BASE_OUTLINE_SYSTEM = (
     "You are an experienced K-12 curriculum designer. Plan a single class lesson "
     "for the given subject and grade as an ordered list of pedagogical moves. The "
     "move types are: hook, concept, check-for-understanding, exit-ticket, video.\n\n"
     "YOU decide how many slides the lesson needs and how to sequence the moves — "
-    "let the topic drive it, not a fixed template. A simple topic may need only a "
-    "few slides; a rich or multi-part topic may need many. Use each move type as "
-    "often as it helps: several concepts for a big idea, a check right after a "
-    "tricky one, a video when seeing the thing matters, even more than one hook "
-    "or check if it serves the lesson. There is no required shape, and no fixed "
-    "length — most lessons land around 4 to 8 slides, but use fewer for a simple "
-    "topic and more for a rich one; let the content decide.\n\n"
-    "Good pedagogy still applies: open in a way that engages or activates prior "
-    "knowledge, build understanding in a sensible order, verify it along the way, "
-    "and end with something that consolidates or lets the teacher gauge learning. "
-    "Match the depth and reading level to the grade. Give each slide a one-line "
-    "intent describing what it should accomplish."
+    "let the topic drive it, not a fixed template. Use each move type as often as "
+    "it helps. Give each slide a one-line intent describing what it should accomplish."
 )
 
+# The default pedagogy blocks. Each is a composable rule; the teacher edits this
+# list in the UI. These are the "building blocks" of the lesson's pedagogy.
+DEFAULT_PEDAGOGY: list[dict] = [
+    {"id": "hook", "label": "Open with a hook",
+     "text": "Open the lesson in a way that grabs attention or activates prior knowledge."},
+    {"id": "reading-level", "label": "Match the grade",
+     "text": "Match the depth and reading level to the grade."},
+    {"id": "verify", "label": "Verify understanding",
+     "text": "Add a check-for-understanding after a concept students might find tricky."},
+    {"id": "exit", "label": "Close with an exit ticket",
+     "text": "End with an exit-ticket that lets the teacher gauge what students learned."},
+    {"id": "video", "label": "Use video for processes",
+     "text": "Include a video slide when seeing the thing matters — a process worth watching."},
+    {"id": "length", "label": "Right-size the lesson",
+     "text": "Most lessons land around 4 to 8 slides; use fewer for a simple topic, more for a rich one."},
+]
 
-async def generate_outline(subject: str, grade: str) -> Outline:
+
+def outline_system(pedagogy: list[str] | None) -> str:
+    """Assemble the outline system prompt: the fixed base plus the enabled
+    pedagogy blocks. `pedagogy` is the list of enabled block texts; None uses
+    the defaults."""
+    rules = pedagogy if pedagogy is not None else [b["text"] for b in DEFAULT_PEDAGOGY]
+    if not rules:
+        return BASE_OUTLINE_SYSTEM
+    joined = "\n".join(f"- {r}" for r in rules)
+    return f"{BASE_OUTLINE_SYSTEM}\n\nPedagogical guidelines:\n{joined}"
+
+
+async def generate_outline(subject: str, grade: str, pedagogy: list[str] | None = None) -> Outline:
     prompt = f"Subject: {subject}\nGrade: {grade}\n\nPlan the lesson."
-    outline = await _generate(Outline, _OUTLINE_SYSTEM, prompt)
+    outline = await _generate(Outline, outline_system(pedagogy), prompt)
     if outline is None:
         # Outline is load-bearing; a minimal safe default beats a hard failure.
         return Outline(
@@ -244,7 +266,9 @@ async def _attach_media(content: dict, subject: str, grade: str) -> None:
 # --- Orchestration ----------------------------------------------------------
 
 
-async def generate_deck_events(subject: str, grade: str, demo: bool = False):
+async def generate_deck_events(
+    subject: str, grade: str, demo: bool = False, pedagogy: list[str] | None = None
+):
     """Run the pipeline, yielding technical progress events (the exact prompt
     sent to the model and the JSON it returned) so the UI can show what's
     happening behind the scenes. The final event is {"type": "done", "deck": …}."""
@@ -259,12 +283,13 @@ async def generate_deck_events(subject: str, grade: str, demo: bool = False):
         yield {"type": "done", "deck": deck.model_dump()}
         return
 
-    # Stage 1 — outline.
+    # Stage 1 — outline. The system prompt is assembled from the editable
+    # pedagogy blocks, so the panel shows exactly what the blocks produced.
     outline_prompt = f"Subject: {subject}\nGrade: {grade}\n\nPlan the lesson."
     yield {"type": "call", "stage": "outline", "model": MODEL, "schema": "Outline",
-           "system": _OUTLINE_SYSTEM, "prompt": outline_prompt}
+           "system": outline_system(pedagogy), "prompt": outline_prompt}
     try:
-        outline = await generate_outline(subject, grade)
+        outline = await generate_outline(subject, grade, pedagogy)
     except Exception as e:
         yield {"type": "error", "message": _friendly_error(e)}
         return
@@ -310,10 +335,12 @@ def _friendly_error(e: Exception) -> str:
     return f"AI request failed: {e}. You can switch to demo mode instead."
 
 
-async def generate_deck(subject: str, grade: str, demo: bool = False) -> Deck:
+async def generate_deck(
+    subject: str, grade: str, demo: bool = False, pedagogy: list[str] | None = None
+) -> Deck:
     """Non-streaming form — consume the event stream and return the final deck."""
     deck: Deck | None = None
-    async for ev in generate_deck_events(subject, grade, demo):
+    async for ev in generate_deck_events(subject, grade, demo, pedagogy):
         if ev["type"] == "done":
             deck = Deck.model_validate(ev["deck"])
     assert deck is not None

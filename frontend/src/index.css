@@ -116,6 +116,24 @@ button.danger { color: #e5385b; }
 .banner { background: #fff6d6; border: 1px solid #f0dc8a; padding: 11px 16px; border-radius: 12px; margin-top: 16px; }
 .banner.error { background: #ffe4e4; border-color: #f0a9a9; }
 
+/* Pedagogy blocks panel */
+.pedagogy { margin-top: 16px; background: var(--paper); border: 1px solid var(--rule); border-radius: 14px; overflow: hidden; box-shadow: 0 8px 24px rgba(120, 100, 180, 0.06); }
+.pedagogy-head { width: 100%; display: flex; justify-content: space-between; align-items: center; background: var(--paper); border: none; border-radius: 0; padding: 14px 18px; font-weight: 700; font-size: 14px; }
+.pedagogy-head:hover:not(:disabled) { color: #3a86ff; }
+.pedagogy .muted { color: #8a8a9a; font-weight: 600; font-size: 12px; }
+.pedagogy-body { padding: 0 18px 18px; }
+.base-prompt { margin-bottom: 12px; }
+.base-prompt summary { cursor: pointer; font-size: 13px; color: #3a86ff; font-weight: 600; }
+.base-prompt pre { margin: 8px 0 0; padding: 10px; background: #1e1e2e; color: #d6d6e0; border-radius: 8px; font-size: 12px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+.block-list { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.block-list li { display: flex; align-items: center; gap: 10px; }
+.block-list li.off .block-text { opacity: 0.55; text-decoration: line-through; }
+.block-text { flex: 1; padding: 8px 10px; border: 2px solid var(--rule); border-radius: 8px; font-size: 14px; font-family: inherit; }
+.block-text:focus { outline: none; border-color: #3a86ff; }
+.block-remove { border: none; background: transparent; color: #e5385b; font-size: 14px; cursor: pointer; padding: 4px 8px; }
+.block-add { border: 2px dashed var(--rule); background: transparent; color: #3a86ff; font-weight: 700; padding: 8px 14px; border-radius: 8px; }
+.block-add:hover:not(:disabled) { border-color: #3a86ff; }
+
 /* Workspace: deck on the left, process panel on the right */
 .workspace { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; margin-top: 30px; }
 

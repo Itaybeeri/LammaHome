@@ -1,4 +1,11 @@
-import type { Deck, Slide, SlideType } from "./types";
+import type { Deck, PedagogyBlock, Slide, SlideType } from "./types";
+
+// The fixed base prompt + the default, editable pedagogy blocks.
+export async function getPedagogy(): Promise<{ base_system: string; blocks: PedagogyBlock[] }> {
+  const res = await fetch("/api/pedagogy");
+  if (!res.ok) throw new Error(`Pedagogy fetch failed (${res.status})`);
+  return res.json();
+}
 
 // A progress event from the backend pipeline (newline-delimited JSON).
 export interface ProgressEvent {
@@ -51,10 +58,11 @@ export async function generateDeck(
   grade: string,
   demo: boolean,
   onEvent: (ev: ProgressEvent) => void,
+  pedagogy?: string[] | null,
 ): Promise<Deck> {
   let deck: Deck | null = null;
   let err: string | null = null;
-  await streamNdjson("/api/generate/stream", { subject, grade, demo }, (ev) => {
+  await streamNdjson("/api/generate/stream", { subject, grade, demo, pedagogy }, (ev) => {
     if (ev.type === "done" && ev.deck) deck = ev.deck;
     if (ev.type === "error" && ev.message) err = ev.message;
     onEvent(ev);

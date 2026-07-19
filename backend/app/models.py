@@ -118,6 +118,10 @@ class GenerateRequest(BaseModel):
         default=False,
         description="If true, serve the pre-generated demo deck instead of calling the AI.",
     )
+    pedagogy: list[str] | None = Field(
+        default=None,
+        description="Enabled pedagogy-block texts to shape the lesson plan. None = defaults.",
+    )
 
 
 class RegenerateRequest(BaseModel):

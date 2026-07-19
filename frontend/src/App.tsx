@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import PromptBox from "./components/PromptBox";
 import DeckView from "./components/Deck";
 import ProcessPanel from "./components/ProcessPanel";
-import { generateDeck, regenerateSlide, type ProgressEvent } from "./api";
-import type { Deck, Slide, SlideType } from "./types";
+import PedagogyPanel from "./components/PedagogyPanel";
+import { generateDeck, getPedagogy, regenerateSlide, type ProgressEvent } from "./api";
+import type { Deck, PedagogyBlock, Slide, SlideType } from "./types";
 
 export default function App() {
   const [deck, setDeck] = useState<Deck | null>(null);
@@ -16,6 +17,10 @@ export default function App() {
   const [mode, setMode] = useState<"ai" | "demo">("ai");
   // Live pipeline events for the "behind the scenes" panel.
   const [log, setLog] = useState<ProgressEvent[]>([]);
+  // Editable pedagogy building blocks (loaded from the backend).
+  const [baseSystem, setBaseSystem] = useState("");
+  const [pedagogy, setPedagogy] = useState<PedagogyBlock[]>([]);
+  const [pedagogyLoaded, setPedagogyLoaded] = useState(false);
 
   // On load, find out whether a key is configured. If not, force demo mode.
   useEffect(() => {
@@ -28,7 +33,22 @@ export default function App() {
       .catch(() => setLiveApi(null));
   }, []);
 
+  // Load the editable pedagogy blocks.
+  useEffect(() => {
+    getPedagogy()
+      .then((p) => {
+        setBaseSystem(p.base_system);
+        setPedagogy(p.blocks);
+        setPedagogyLoaded(true);
+      })
+      .catch(() => setPedagogyLoaded(false));
+  }, []);
+
   const demo = mode === "demo";
+  // Enabled block texts to send with a generate; null = backend defaults.
+  const pedagogyRules = pedagogyLoaded
+    ? pedagogy.filter((b) => b.enabled).map((b) => b.text.trim()).filter(Boolean)
+    : null;
 
   const append = (ev: ProgressEvent) => setLog((l) => [...l, ev]);
 
@@ -37,7 +57,7 @@ export default function App() {
     setError(null);
     setLog([]);
     try {
-      setDeck(await generateDeck(subject, grade, demo, append));
+      setDeck(await generateDeck(subject, grade, demo, append, pedagogyRules));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -99,6 +119,10 @@ export default function App() {
         <p className="banner">No API key set — "Real AI" is disabled; using the demo deck.</p>
       )}
       {error && <p className="banner error">{error}</p>}
+
+      {pedagogyLoaded && (
+        <PedagogyPanel baseSystem={baseSystem} blocks={pedagogy} onChange={setPedagogy} />
+      )}
 
       <div className="workspace">
         {deck && (

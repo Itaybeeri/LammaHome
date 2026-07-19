@@ -39,9 +39,18 @@ def health() -> dict:
     return {"live_api": pipeline.has_live_api()}
 
 
+@app.get("/api/pedagogy")
+def pedagogy() -> dict:
+    """The fixed base prompt + the default, editable pedagogy blocks the UI shows."""
+    return {
+        "base_system": pipeline.BASE_OUTLINE_SYSTEM,
+        "blocks": [{**b, "enabled": True} for b in pipeline.DEFAULT_PEDAGOGY],
+    }
+
+
 @app.post("/api/generate", response_model=Deck)
 async def generate(req: GenerateRequest) -> Deck:
-    return await pipeline.generate_deck(req.subject, req.grade, req.demo)
+    return await pipeline.generate_deck(req.subject, req.grade, req.demo, req.pedagogy)
 
 
 @app.post("/api/regenerate", response_model=Slide)
@@ -60,7 +69,7 @@ async def _ndjson(events) -> AsyncIterator[str]:
 
 @app.post("/api/generate/stream")
 async def generate_stream(req: GenerateRequest) -> StreamingResponse:
-    events = pipeline.generate_deck_events(req.subject, req.grade, req.demo)
+    events = pipeline.generate_deck_events(req.subject, req.grade, req.demo, req.pedagogy)
     return StreamingResponse(_ndjson(events), media_type="application/x-ndjson")
 
 

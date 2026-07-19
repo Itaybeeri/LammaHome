@@ -28,3 +28,12 @@ export interface Deck {
   grade: string;
   slides: Slide[];
 }
+
+// An editable pedagogy rule. Enabled blocks are assembled into the AI's lesson-
+// planning prompt, so the teacher composes the pedagogy from building blocks.
+export interface PedagogyBlock {
+  id: string;
+  label: string;
+  text: string;
+  enabled: boolean;
+}
