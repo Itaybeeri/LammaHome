@@ -1,4 +1,4 @@
-import type { Deck, PedagogyBlock, Slide, SlideType } from "./types";
+import type { CustomTypeDef, Deck, PedagogyBlock, Slide } from "./types";
 
 // The fixed base prompt + the default, editable pedagogy blocks.
 export async function getPedagogy(): Promise<{ base_system: string; blocks: PedagogyBlock[] }> {
@@ -16,7 +16,7 @@ export interface ProgressEvent {
   schema?: string;
   system?: string;
   prompt?: string;
-  slide_type?: SlideType;
+  slide_type?: string;
   status?: "ok" | "failed";
   response?: unknown;
   deck?: Deck;
@@ -59,10 +59,12 @@ export async function generateDeck(
   demo: boolean,
   onEvent: (ev: ProgressEvent) => void,
   pedagogy?: string[] | null,
+  customTypes?: CustomTypeDef[] | null,
 ): Promise<Deck> {
   let deck: Deck | null = null;
   let err: string | null = null;
-  await streamNdjson("/api/generate/stream", { subject, grade, demo, pedagogy }, (ev) => {
+  const body = { subject, grade, demo, pedagogy, custom_types: customTypes };
+  await streamNdjson("/api/generate/stream", body, (ev) => {
     if (ev.type === "done" && ev.deck) deck = ev.deck;
     if (ev.type === "error" && ev.message) err = ev.message;
     onEvent(ev);
@@ -76,15 +78,16 @@ export async function regenerateSlide(
   subject: string,
   grade: string,
   slide: Slide,
-  targetType: SlideType | null,
+  targetType: string | null,
   demo: boolean,
   onEvent: (ev: ProgressEvent) => void,
+  customTypes?: CustomTypeDef[] | null,
 ): Promise<Slide> {
   let out: Slide | null = null;
   let err: string | null = null;
   await streamNdjson(
     "/api/regenerate/stream",
-    { subject, grade, slide, target_type: targetType, demo },
+    { subject, grade, slide, target_type: targetType, demo, custom_types: customTypes },
     (ev) => {
       if (ev.type === "done" && ev.slide) out = ev.slide;
       if (ev.type === "error" && ev.message) err = ev.message;

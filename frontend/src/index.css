@@ -134,6 +134,15 @@ button.danger { color: #e5385b; }
 .block-add { border: 2px dashed var(--rule); background: transparent; color: #3a86ff; font-weight: 700; padding: 8px 14px; border-radius: 8px; }
 .block-add:hover:not(:disabled) { border-color: #3a86ff; }
 
+/* Slide-type blocks panel */
+.builtin-types { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 14px; }
+.ct-emoji { width: 46px; text-align: center; padding: 8px 4px; border: 2px solid var(--rule); border-radius: 8px; font-size: 16px; }
+.ct-name { width: 160px; padding: 8px 10px; border: 2px solid var(--rule); border-radius: 8px; font-size: 14px; font-family: inherit; }
+.ct-emoji:focus, .ct-name:focus { outline: none; border-color: #3a86ff; }
+
+/* Custom slide types (no built-in color) get a teal theme */
+.custom-slide { --bold: #00897b; --pale: #e0f2f1; }
+
 /* Workspace: deck on the left, process panel on the right */
 .workspace { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; margin-top: 30px; }
 

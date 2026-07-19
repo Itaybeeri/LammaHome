@@ -24,7 +24,9 @@ from anthropic import AsyncAnthropic
 from pydantic import BaseModel
 
 from .models import (
+    BUILTIN_TYPES,
     CONTENT_MODELS,
+    CustomContent,
     Deck,
     Outline,
     PlannedSlide,
@@ -73,11 +75,11 @@ async def _generate(schema: type[BaseModel], system: str, prompt: str) -> BaseMo
 # assembled from this base plus the enabled blocks (see outline_system).
 BASE_OUTLINE_SYSTEM = (
     "You are an experienced K-12 curriculum designer. Plan a single class lesson "
-    "for the given subject and grade as an ordered list of pedagogical moves. The "
-    "move types are: hook, concept, check-for-understanding, exit-ticket, video.\n\n"
+    "for the given subject and grade as an ordered list of pedagogical moves.\n\n"
     "YOU decide how many slides the lesson needs and how to sequence the moves — "
     "let the topic drive it, not a fixed template. Use each move type as often as "
-    "it helps. Give each slide a one-line intent describing what it should accomplish."
+    "it helps. Set each slide's `type` to the exact type key from the list below, "
+    "and give it a one-line intent describing what it should accomplish."
 )
 
 # The default pedagogy blocks. Each is a composable rule; the teacher edits this
@@ -98,20 +100,31 @@ DEFAULT_PEDAGOGY: list[dict] = [
 ]
 
 
-def outline_system(pedagogy: list[str] | None) -> str:
-    """Assemble the outline system prompt: the fixed base plus the enabled
-    pedagogy blocks. `pedagogy` is the list of enabled block texts; None uses
-    the defaults."""
+def _custom_map(custom_types: list[dict] | None) -> dict[str, str]:
+    """name -> instruction for the teacher's custom slide-type blocks."""
+    return {c["name"]: c.get("instruction", "") for c in (custom_types or []) if c.get("name")}
+
+
+def outline_system(pedagogy: list[str] | None, custom_types: list[dict] | None = None) -> str:
+    """Assemble the outline system prompt from three composable parts: the fixed
+    base, the available move types (built-in + custom blocks), and the enabled
+    pedagogy blocks."""
+    type_lines = [f"- {k}: {v}" for k, v in BUILTIN_TYPES.items()]
+    type_lines += [f"- {name}: {instr}" for name, instr in _custom_map(custom_types).items()]
+    types_block = "Available move types (use the exact key):\n" + "\n".join(type_lines)
+
     rules = pedagogy if pedagogy is not None else [b["text"] for b in DEFAULT_PEDAGOGY]
-    if not rules:
-        return BASE_OUTLINE_SYSTEM
-    joined = "\n".join(f"- {r}" for r in rules)
-    return f"{BASE_OUTLINE_SYSTEM}\n\nPedagogical guidelines:\n{joined}"
+    parts = [BASE_OUTLINE_SYSTEM, types_block]
+    if rules:
+        parts.append("Pedagogical guidelines:\n" + "\n".join(f"- {r}" for r in rules))
+    return "\n\n".join(parts)
 
 
-async def generate_outline(subject: str, grade: str, pedagogy: list[str] | None = None) -> Outline:
+async def generate_outline(
+    subject: str, grade: str, pedagogy: list[str] | None = None, custom_types: list[dict] | None = None
+) -> Outline:
     prompt = f"Subject: {subject}\nGrade: {grade}\n\nPlan the lesson."
-    outline = await _generate(Outline, outline_system(pedagogy), prompt)
+    outline = await _generate(Outline, outline_system(pedagogy, custom_types), prompt)
     if outline is None:
         # Outline is load-bearing; a minimal safe default beats a hard failure.
         return Outline(
@@ -122,6 +135,11 @@ async def generate_outline(subject: str, grade: str, pedagogy: list[str] | None 
                 PlannedSlide(type="exit-ticket", intent="Have students reflect on what they learned."),
             ]
         )
+    # Coerce any type the model invented outside the known set to a safe default.
+    known = set(BUILTIN_TYPES) | set(_custom_map(custom_types))
+    for s in outline.slides:
+        if s.type not in known:
+            s.type = "concept"
     return outline
 
 
@@ -138,27 +156,41 @@ _FILL_SYSTEM = (
 )
 
 
-def _fill_prompt(subject: str, grade: str, planned: PlannedSlide) -> str:
-    return (
-        f"Subject: {subject}\n"
-        f"Grade: {grade}\n"
-        f"Slide type: {planned.type}\n"
-        f"Intent: {planned.intent}\n\n"
-        f"Write this slide."
-    )
+def _fill_prompt(subject: str, grade: str, planned: PlannedSlide, custom_instruction: str = "") -> str:
+    lines = [
+        f"Subject: {subject}",
+        f"Grade: {grade}",
+        f"Slide type: {planned.type}",
+    ]
+    if custom_instruction:  # a custom block: tell the model what this type is for
+        lines.append(f"What a '{planned.type}' slide should be: {custom_instruction}")
+    lines.append(f"Intent: {planned.intent}")
+    return "\n".join(lines) + "\n\nWrite this slide."
 
 
-async def _fill_once(subject: str, grade: str, planned: PlannedSlide) -> dict | None:
-    schema = CONTENT_MODELS[planned.type]
-    content = await _generate(schema, _FILL_SYSTEM, _fill_prompt(subject, grade, planned))
+async def _fill_once(
+    subject: str, grade: str, planned: PlannedSlide, custom_map: dict[str, str]
+) -> dict | None:
+    # Built-in type -> its schema; custom type -> the generic CustomContent shape.
+    schema = CONTENT_MODELS.get(planned.type, CustomContent)
+    instruction = custom_map.get(planned.type, "")
+    prompt = _fill_prompt(subject, grade, planned, instruction)
+    content = await _generate(schema, _FILL_SYSTEM, prompt)
     return content.model_dump() if content is not None else None
 
 
-async def fill_slide(subject: str, grade: str, planned: PlannedSlide, slide_id: str) -> Slide:
+async def fill_slide(
+    subject: str,
+    grade: str,
+    planned: PlannedSlide,
+    slide_id: str,
+    custom_map: dict[str, str] | None = None,
+) -> Slide:
     """Fill one slide: try, retry once, then fall back to a placeholder."""
+    custom_map = custom_map or {}
     for _ in range(2):  # one attempt + one retry
         try:
-            content = await _fill_once(subject, grade, planned)
+            content = await _fill_once(subject, grade, planned, custom_map)
         except Exception:
             content = None  # transient API error -> retry, then placeholder
         if content is not None:
@@ -267,7 +299,11 @@ async def _attach_media(content: dict, subject: str, grade: str) -> None:
 
 
 async def generate_deck_events(
-    subject: str, grade: str, demo: bool = False, pedagogy: list[str] | None = None
+    subject: str,
+    grade: str,
+    demo: bool = False,
+    pedagogy: list[str] | None = None,
+    custom_types: list[dict] | None = None,
 ):
     """Run the pipeline, yielding technical progress events (the exact prompt
     sent to the model and the JSON it returned) so the UI can show what's
@@ -285,11 +321,12 @@ async def generate_deck_events(
 
     # Stage 1 — outline. The system prompt is assembled from the editable
     # pedagogy blocks, so the panel shows exactly what the blocks produced.
+    custom_map = _custom_map(custom_types)
     outline_prompt = f"Subject: {subject}\nGrade: {grade}\n\nPlan the lesson."
     yield {"type": "call", "stage": "outline", "model": MODEL, "schema": "Outline",
-           "system": outline_system(pedagogy), "prompt": outline_prompt}
+           "system": outline_system(pedagogy, custom_types), "prompt": outline_prompt}
     try:
-        outline = await generate_outline(subject, grade, pedagogy)
+        outline = await generate_outline(subject, grade, pedagogy, custom_types)
     except Exception as e:
         yield {"type": "error", "message": _friendly_error(e)}
         return
@@ -300,10 +337,11 @@ async def generate_deck_events(
            "message": f"Filling {len(outline.slides)} slides in parallel — one structured-output call each."}
     for planned in outline.slides:  # show every request that goes out
         yield {"type": "call", "stage": "fill", "model": MODEL,
-               "schema": CONTENT_MODELS[planned.type].__name__, "slide_type": planned.type,
-               "system": _FILL_SYSTEM, "prompt": _fill_prompt(subject, grade, planned)}
+               "schema": CONTENT_MODELS.get(planned.type, CustomContent).__name__,
+               "slide_type": planned.type, "system": _FILL_SYSTEM,
+               "prompt": _fill_prompt(subject, grade, planned, custom_map.get(planned.type, ""))}
     tasks = [
-        asyncio.create_task(fill_slide(subject, grade, planned, f"slide-{i + 1}"))
+        asyncio.create_task(fill_slide(subject, grade, planned, f"slide-{i + 1}", custom_map))
         for i, planned in enumerate(outline.slides)
     ]
     by_id: dict[str, Slide] = {}
@@ -336,11 +374,15 @@ def _friendly_error(e: Exception) -> str:
 
 
 async def generate_deck(
-    subject: str, grade: str, demo: bool = False, pedagogy: list[str] | None = None
+    subject: str,
+    grade: str,
+    demo: bool = False,
+    pedagogy: list[str] | None = None,
+    custom_types: list[dict] | None = None,
 ) -> Deck:
     """Non-streaming form — consume the event stream and return the final deck."""
     deck: Deck | None = None
-    async for ev in generate_deck_events(subject, grade, demo, pedagogy):
+    async for ev in generate_deck_events(subject, grade, demo, pedagogy, custom_types):
         if ev["type"] == "done":
             deck = Deck.model_validate(ev["deck"])
     assert deck is not None
@@ -348,11 +390,16 @@ async def generate_deck(
 
 
 async def regenerate_slide(
-    subject: str, grade: str, slide: Slide, target_type: str | None, demo: bool = False
+    subject: str,
+    grade: str,
+    slide: Slide,
+    target_type: str | None,
+    demo: bool = False,
+    custom_types: list[dict] | None = None,
 ) -> Slide:
     """Re-run the fill step for a single slide. If target_type is given, the
-    slide comes back as a different pedagogical move — same machinery, one
-    parameter (DECISIONS D-006 / D-009)."""
+    slide comes back as a different move — built-in OR a custom block (DECISIONS
+    D-006 / D-009)."""
     if demo or _client is None:
         # Demo mode / no key: hand back a fallback slide of the requested type.
         fallback = load_fallback_deck()
@@ -362,24 +409,31 @@ async def regenerate_slide(
 
     new_type = target_type or slide.type
     planned = PlannedSlide(type=new_type, intent=slide.intent)
-    return await fill_slide(subject, grade, planned, slide.id)
+    return await fill_slide(subject, grade, planned, slide.id, _custom_map(custom_types))
 
 
 async def regenerate_slide_events(
-    subject: str, grade: str, slide: Slide, target_type: str | None, demo: bool = False
+    subject: str,
+    grade: str,
+    slide: Slide,
+    target_type: str | None,
+    demo: bool = False,
+    custom_types: list[dict] | None = None,
 ):
     """Streaming form of regenerate_slide — yields progress, ends with
     {"type": "done", "slide": …}."""
     new_type = target_type or slide.type
+    custom_map = _custom_map(custom_types)
     if not demo and _client is not None:
         planned = PlannedSlide(type=new_type, intent=slide.intent)
         yield {"type": "call", "stage": "fill", "model": MODEL,
-               "schema": CONTENT_MODELS[new_type].__name__, "slide_type": new_type,
-               "system": _FILL_SYSTEM, "prompt": _fill_prompt(subject, grade, planned)}
+               "schema": CONTENT_MODELS.get(new_type, CustomContent).__name__, "slide_type": new_type,
+               "system": _FILL_SYSTEM,
+               "prompt": _fill_prompt(subject, grade, planned, custom_map.get(new_type, ""))}
     else:
         yield {"type": "note", "message": f"Demo mode — swapping in a {new_type} slide."}
     try:
-        new = await regenerate_slide(subject, grade, slide, target_type, demo)
+        new = await regenerate_slide(subject, grade, slide, target_type, demo, custom_types)
     except Exception as e:
         yield {"type": "error", "message": _friendly_error(e)}
         return

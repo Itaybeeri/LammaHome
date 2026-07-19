@@ -1,12 +1,11 @@
-import type { Slide, SlideType } from "../types";
+import type { Slide } from "../types";
 
 // Renders a slide BY TYPE. This switch is the frontend half of the slide-type
-// "plugin" (the backend half is CONTENT_MODELS in models.py). Add a type =
-// add a META entry + a case here.
+// "plugin" (the backend half is CONTENT_MODELS in models.py). Built-in types
+// have their own case + color; any *custom* type falls through to a generic
+// renderer, so a teacher-defined block works with no new code.
 
-// Each move gets a friendly emoji + label; the matching color lives in the CSS
-// `.type-<name>` rules, keyed off the class we set below.
-const META: Record<SlideType, { emoji: string; label: string }> = {
+const META: Record<string, { emoji: string; label: string }> = {
   hook: { emoji: "🎣", label: "Hook" },
   concept: { emoji: "💡", label: "Concept" },
   "check-for-understanding": { emoji: "✅", label: "Check for understanding" },
@@ -15,9 +14,10 @@ const META: Record<SlideType, { emoji: string; label: string }> = {
 };
 
 export default function SlideView({ slide }: { slide: Slide }) {
-  const meta = META[slide.type];
+  const builtin = slide.type in META;
+  const meta = META[slide.type] ?? { emoji: "🧩", label: slide.type };
   return (
-    <div className={`slide-body type-${slide.type}`}>
+    <div className={`slide-body type-${slide.type} ${builtin ? "" : "custom-slide"}`}>
       <div className="move-badge">
         {meta.emoji} {meta.label}
       </div>
@@ -105,6 +105,19 @@ function SlideContent({ slide }: { slide: Slide }) {
         </>
       );
     }
+
+    // Custom slide-type block: generic title / image / body / bullets.
+    default:
+      return (
+        <>
+          <h2>{str(c.title)}</h2>
+          <SlideImage content={c} />
+          {str(c.body) && <p>{str(c.body)}</p>}
+          {list(c.bullets).length > 0 && (
+            <ul>{list(c.bullets).map((b, i) => <li key={i}>{b}</li>)}</ul>
+          )}
+        </>
+      );
   }
 }
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Deck, Slide, SlideType } from "../types";
+import type { Deck, Slide } from "../types";
 import { SLIDE_TYPES } from "../types";
 import SlideView from "./Slide";
 
@@ -9,13 +9,22 @@ import SlideView from "./Slide";
 interface Props {
   deck: Deck;
   busySlideId: string | null;
-  onRegenerate: (slide: Slide, targetType: SlideType | null) => void;
+  customTypeNames: string[];
+  onRegenerate: (slide: Slide, targetType: string | null) => void;
   onEdit: (slideId: string, content: Record<string, unknown>) => void;
   onDelete: (slideId: string) => void;
   onMove: (index: number, direction: -1 | 1) => void;
 }
 
-export default function DeckView({ deck, busySlideId, onRegenerate, onEdit, onDelete, onMove }: Props) {
+export default function DeckView({
+  deck,
+  busySlideId,
+  customTypeNames,
+  onRegenerate,
+  onEdit,
+  onDelete,
+  onMove,
+}: Props) {
   const [index, setIndex] = useState(0);
   const [editing, setEditing] = useState(false);
 
@@ -66,9 +75,9 @@ export default function DeckView({ deck, busySlideId, onRegenerate, onEdit, onDe
           <select
             value={slide.type}
             disabled={busy}
-            onChange={(e) => onRegenerate(slide, e.target.value as SlideType)}
+            onChange={(e) => onRegenerate(slide, e.target.value)}
           >
-            {SLIDE_TYPES.map((t) => (
+            {[...SLIDE_TYPES, ...customTypeNames].map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}
           </select>

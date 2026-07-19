@@ -21,7 +21,18 @@ from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from fastapi.responses import StreamingResponse  # noqa: E402
 
 from . import pipeline  # noqa: E402
-from .models import Deck, GenerateRequest, RegenerateRequest, Slide  # noqa: E402
+from .models import (  # noqa: E402
+    BUILTIN_TYPES,
+    Deck,
+    GenerateRequest,
+    RegenerateRequest,
+    Slide,
+)
+
+
+def _customs(req: GenerateRequest | RegenerateRequest) -> list[dict] | None:
+    """Custom slide-type blocks as plain dicts for the pipeline."""
+    return [c.model_dump() for c in req.custom_types] if req.custom_types else None
 
 app = FastAPI(title="Lamma Presentation Generator")
 
@@ -48,15 +59,23 @@ def pedagogy() -> dict:
     }
 
 
+@app.get("/api/slide-types")
+def slide_types() -> dict:
+    """The built-in slide-type blocks (the proven building blocks the UI shows)."""
+    return {"builtin": [{"name": k, "description": v} for k, v in BUILTIN_TYPES.items()]}
+
+
 @app.post("/api/generate", response_model=Deck)
 async def generate(req: GenerateRequest) -> Deck:
-    return await pipeline.generate_deck(req.subject, req.grade, req.demo, req.pedagogy)
+    return await pipeline.generate_deck(
+        req.subject, req.grade, req.demo, req.pedagogy, _customs(req)
+    )
 
 
 @app.post("/api/regenerate", response_model=Slide)
 async def regenerate(req: RegenerateRequest) -> Slide:
     return await pipeline.regenerate_slide(
-        req.subject, req.grade, req.slide, req.target_type, req.demo
+        req.subject, req.grade, req.slide, req.target_type, req.demo, _customs(req)
     )
 
 
@@ -69,13 +88,15 @@ async def _ndjson(events) -> AsyncIterator[str]:
 
 @app.post("/api/generate/stream")
 async def generate_stream(req: GenerateRequest) -> StreamingResponse:
-    events = pipeline.generate_deck_events(req.subject, req.grade, req.demo, req.pedagogy)
+    events = pipeline.generate_deck_events(
+        req.subject, req.grade, req.demo, req.pedagogy, _customs(req)
+    )
     return StreamingResponse(_ndjson(events), media_type="application/x-ndjson")
 
 
 @app.post("/api/regenerate/stream")
 async def regenerate_stream(req: RegenerateRequest) -> StreamingResponse:
     events = pipeline.regenerate_slide_events(
-        req.subject, req.grade, req.slide, req.target_type, req.demo
+        req.subject, req.grade, req.slide, req.target_type, req.demo, _customs(req)
     )
     return StreamingResponse(_ndjson(events), media_type="application/x-ndjson")

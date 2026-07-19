@@ -65,7 +65,20 @@ class VideoContent(BaseModel):
     )
 
 
-# The registry. type -> the content schema the AI fills for that type.
+class CustomContent(BaseModel):
+    """The generic schema used for CUSTOM slide-type blocks the teacher defines
+    at runtime. Any type not in CONTENT_MODELS is filled with this shape and
+    rendered generically — that's how a custom block enters the system without
+    new code (see docs/DECISIONS.md)."""
+
+    title: str
+    body: str = Field(description="The main text for this slide, at the target reading level.")
+    bullets: list[str] = Field(description="0-4 short supporting points (may be empty).")
+    image_query: str = Field(description="A concrete image search phrase, or '' for no image.")
+
+
+# The registry of BUILT-IN types. type -> the content schema the AI fills.
+# Custom types aren't here; they fall through to CustomContent.
 CONTENT_MODELS: dict[str, type[BaseModel]] = {
     "hook": HookContent,
     "concept": ConceptContent,
@@ -74,12 +87,30 @@ CONTENT_MODELS: dict[str, type[BaseModel]] = {
     "video": VideoContent,
 }
 
+# One-line descriptions of the built-in moves, for the outline prompt.
+BUILTIN_TYPES: dict[str, str] = {
+    "hook": "grab attention or activate prior knowledge",
+    "concept": "teach one idea",
+    "check-for-understanding": "verify students understood something",
+    "exit-ticket": "a closing prompt the teacher collects",
+    "video": "a short clip when seeing a process matters",
+}
+
+
+class CustomTypeDef(BaseModel):
+    """A teacher-defined slide-type block. It becomes a first-class move the
+    planner can use and the renderer shows generically."""
+
+    name: str = Field(description="Short type key, e.g. 'mini-game' or 'fun-fact'.")
+    emoji: str = ""
+    instruction: str = Field(description="What the AI should put on this kind of slide.")
+
 
 # --- Stage 1: the outline (the plan the AI infers, shown before slides) -----
 
 
 class PlannedSlide(BaseModel):
-    type: SlideType
+    type: str  # a built-in move OR a custom type name (validated in the pipeline)
     intent: str = Field(description="One line: what this slide should accomplish.")
 
 
@@ -96,7 +127,7 @@ class Slide(BaseModel):
     `status="failed"` marks a placeholder the teacher can regenerate (D-010)."""
 
     id: str
-    type: SlideType
+    type: str  # built-in or custom
     intent: str
     content: dict
     status: Literal["ok", "failed"] = "ok"
@@ -122,17 +153,25 @@ class GenerateRequest(BaseModel):
         default=None,
         description="Enabled pedagogy-block texts to shape the lesson plan. None = defaults.",
     )
+    custom_types: list[CustomTypeDef] | None = Field(
+        default=None,
+        description="Teacher-defined custom slide-type blocks the planner may use.",
+    )
 
 
 class RegenerateRequest(BaseModel):
     subject: str
     grade: str
     slide: Slide
-    target_type: SlideType | None = Field(
+    target_type: str | None = Field(
         default=None,
-        description="If set, regenerate the slide as this different pedagogical move.",
+        description="If set, regenerate the slide as this move (built-in or custom).",
     )
     demo: bool = Field(
         default=False,
         description="If true, use the demo deck instead of calling the AI.",
+    )
+    custom_types: list[CustomTypeDef] | None = Field(
+        default=None,
+        description="Teacher-defined custom slide-type blocks (for regenerating as one).",
     )

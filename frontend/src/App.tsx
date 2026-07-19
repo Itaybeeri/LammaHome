@@ -3,8 +3,9 @@ import PromptBox from "./components/PromptBox";
 import DeckView from "./components/Deck";
 import ProcessPanel from "./components/ProcessPanel";
 import PedagogyPanel from "./components/PedagogyPanel";
+import SlideTypesPanel from "./components/SlideTypesPanel";
 import { generateDeck, getPedagogy, regenerateSlide, type ProgressEvent } from "./api";
-import type { Deck, PedagogyBlock, Slide, SlideType } from "./types";
+import { SLIDE_TYPES, type CustomTypeDef, type Deck, type PedagogyBlock, type Slide } from "./types";
 
 export default function App() {
   const [deck, setDeck] = useState<Deck | null>(null);
@@ -21,6 +22,14 @@ export default function App() {
   const [baseSystem, setBaseSystem] = useState("");
   const [pedagogy, setPedagogy] = useState<PedagogyBlock[]>([]);
   const [pedagogyLoaded, setPedagogyLoaded] = useState(false);
+  // Custom slide-type blocks (seeded with one example so the feature is visible).
+  const [customTypes, setCustomTypes] = useState<CustomTypeDef[]>([
+    {
+      name: "mini-game",
+      emoji: "🎮",
+      instruction: "A short on-screen interactive game students play to practice the idea.",
+    },
+  ]);
 
   // On load, find out whether a key is configured. If not, force demo mode.
   useEffect(() => {
@@ -49,6 +58,8 @@ export default function App() {
   const pedagogyRules = pedagogyLoaded
     ? pedagogy.filter((b) => b.enabled).map((b) => b.text.trim()).filter(Boolean)
     : null;
+  // Only send fully-specified custom blocks.
+  const customTypesToSend = customTypes.filter((c) => c.name.trim() && c.instruction.trim());
 
   const append = (ev: ProgressEvent) => setLog((l) => [...l, ev]);
 
@@ -57,7 +68,7 @@ export default function App() {
     setError(null);
     setLog([]);
     try {
-      setDeck(await generateDeck(subject, grade, demo, append, pedagogyRules));
+      setDeck(await generateDeck(subject, grade, demo, append, pedagogyRules, customTypesToSend));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -65,13 +76,15 @@ export default function App() {
     }
   }
 
-  async function handleRegenerate(slide: Slide, targetType: SlideType | null) {
+  async function handleRegenerate(slide: Slide, targetType: string | null) {
     if (!deck) return;
     setBusySlideId(slide.id);
     setError(null);
     setLog([]);
     try {
-      const updated = await regenerateSlide(deck.subject, deck.grade, slide, targetType, demo, append);
+      const updated = await regenerateSlide(
+        deck.subject, deck.grade, slide, targetType, demo, append, customTypesToSend,
+      );
       setDeck({ ...deck, slides: deck.slides.map((s) => (s.id === slide.id ? updated : s)) });
     } catch (e) {
       setError((e as Error).message);
@@ -123,12 +136,14 @@ export default function App() {
       {pedagogyLoaded && (
         <PedagogyPanel baseSystem={baseSystem} blocks={pedagogy} onChange={setPedagogy} />
       )}
+      <SlideTypesPanel builtins={SLIDE_TYPES} customTypes={customTypes} onChange={setCustomTypes} />
 
       <div className="workspace">
         {deck && (
           <DeckView
             deck={deck}
             busySlideId={busySlideId}
+            customTypeNames={customTypesToSend.map((c) => c.name)}
             onRegenerate={handleRegenerate}
             onEdit={handleEdit}
             onDelete={handleDelete}

@@ -17,10 +17,18 @@ export const SLIDE_TYPES: SlideType[] = [
 
 export interface Slide {
   id: string;
-  type: SlideType;
+  type: string; // a built-in SlideType or a custom type name
   intent: string;
   content: Record<string, unknown>;
   status: "ok" | "failed";
+}
+
+// A teacher-defined slide-type block. It becomes a first-class move the planner
+// can use and the renderer shows generically.
+export interface CustomTypeDef {
+  name: string;
+  emoji: string;
+  instruction: string;
 }
 
 export interface Deck {
