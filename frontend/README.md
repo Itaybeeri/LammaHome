@@ -26,7 +26,7 @@ npm run dev
 ```
 
 Serves on **http://localhost:5273**. `vite.config.ts` proxies `/api/*` to the
-backend on port 8000, so start the backend too (or use the root `run` script,
+backend on port 8123, so start the backend too (or use the root `run` script,
 which starts both).
 
 ## How it fits together

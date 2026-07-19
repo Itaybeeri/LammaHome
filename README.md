@@ -87,7 +87,7 @@ From the repo root:
 ```
 
 The script sets up the Python venv and installs deps on first run, then starts
-the backend (port **8000**) and frontend (port **5273**) together. Ctrl+C stops
+the backend (port **8123**) and frontend (port **5273**) together. Ctrl+C stops
 both. Open **http://localhost:5273**.
 
 **API key:** if no Anthropic key is found, the script prompts you to paste one
@@ -96,7 +96,7 @@ and saves it to `backend/.env`. Press Enter to skip — the app then runs in
 can add or change the key in `backend/.env` anytime. The manual steps below do
 the same by hand.
 
-### Manual — backend (port 8000)
+### Manual — backend (port 8123)
 
 ```bash
 cd backend
@@ -104,7 +104,7 @@ python -m venv .venv
 # Windows:  .venv\Scripts\activate     macOS/Linux:  source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env         # optional — add your ANTHROPIC_API_KEY
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8123
 ```
 
 ### Manual — frontend (port 5273)

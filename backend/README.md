@@ -36,11 +36,11 @@ python -m venv .venv
 # Windows:  .venv\Scripts\activate     macOS/Linux:  source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env        # optional — no key = fallback deck
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8123
 ```
 
-Serves on **http://localhost:8000**. Interactive API docs at
-`http://localhost:8000/docs` (FastAPI/Swagger, free).
+Serves on **http://localhost:8123**. Interactive API docs at
+`http://localhost:8123/docs` (FastAPI/Swagger, free).
 
 ## API
 

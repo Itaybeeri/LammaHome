@@ -65,9 +65,9 @@ if (-not (Test-Path (Join-Path $root "frontend/node_modules"))) {
 
 # --- Start the backend in the background ---
 $backend = Start-Process -FilePath $venvPy `
-    -ArgumentList "-m", "uvicorn", "app.main:app", "--reload", "--port", "8000" `
+    -ArgumentList "-m", "uvicorn", "app.main:app", "--reload", "--port", "8123" `
     -WorkingDirectory (Join-Path $root "backend") -PassThru -NoNewWindow
-Write-Host "Backend  -> http://localhost:8000  (PID $($backend.Id))" -ForegroundColor Green
+Write-Host "Backend  -> http://localhost:8123  (PID $($backend.Id))" -ForegroundColor Green
 
 try {
     # --- Start the frontend in the foreground ---

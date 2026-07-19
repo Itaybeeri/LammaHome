@@ -49,9 +49,9 @@ if [ ! -d "$root/frontend/node_modules" ]; then
 fi
 
 # --- Start the backend in the background ---
-(cd "$root/backend" && .venv/bin/python -m uvicorn app.main:app --reload --port 8000) &
+(cd "$root/backend" && .venv/bin/python -m uvicorn app.main:app --reload --port 8123) &
 backend_pid=$!
-echo "Backend  -> http://localhost:8000  (PID $backend_pid)"
+echo "Backend  -> http://localhost:8123  (PID $backend_pid)"
 
 # Stop the backend whenever this script exits (Ctrl+C included).
 trap 'echo; echo "Stopping backend..."; kill "$backend_pid" 2>/dev/null' EXIT
