@@ -126,6 +126,7 @@ origin.
 backend/          FastAPI service + AI pipeline   → backend/README.md
 frontend/         React app                       → frontend/README.md
 docs/
+  architecture.html  rendered architecture + decisions overview (open in a browser)
   DECISIONS.md    every choice: chose X over Y because Z (seeds the slide deck)
   superpowers/specs/…  the consolidated design spec
 run.ps1 / run.sh  start both servers with one command

@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lamma Lesson Generator &mdash; Architecture</title>
+</head>
+<body>
+<style>
+  :root {
+    --paper: #f4f6f9;
+    --surface: #ffffff;
+    --surface-2: #eef1f6;
+    --ink: #171c27;
+    --ink-soft: #59616f;
+    --ink-faint: #878f9d;
+    --rule: #e0e4ea;
+    --accent: #2e40c4;
+    --accent-soft: #e9ebfb;
+    --c-hook: #d76c07;
+    --c-concept: #2f6bf0;
+    --c-check: #1c9840;
+    --c-exit: #7a30dd;
+    --c-video: #dc3550;
+    --c-game: #0891b2;
+    --c-custom: #0a8b7e;
+    --shadow: 0 1px 2px rgba(20, 25, 45, .04), 0 12px 32px rgba(20, 25, 45, .06);
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Cascadia Mono", Consolas, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0e111a; --surface: #161b26; --surface-2: #1c2230; --ink: #e9ecf3;
+      --ink-soft: #9aa3b4; --ink-faint: #6b7488; --rule: #262d3b; --accent: #93a2ff;
+      --accent-soft: #1a2140; --c-hook: #f0913a; --c-concept: #6f9bff; --c-check: #48c46e;
+      --c-exit: #ab6cf0; --c-video: #f0687f; --c-game: #35b6d0; --c-custom: #35b6a6;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 14px 34px rgba(0, 0, 0, .34);
+    }
+  }
+  :root[data-theme="light"] {
+    --paper: #f4f6f9; --surface: #ffffff; --surface-2: #eef1f6; --ink: #171c27;
+    --ink-soft: #59616f; --ink-faint: #878f9d; --rule: #e0e4ea; --accent: #2e40c4;
+    --accent-soft: #e9ebfb; --c-hook: #d76c07; --c-concept: #2f6bf0; --c-check: #1c9840;
+    --c-exit: #7a30dd; --c-video: #dc3550; --c-game: #0891b2; --c-custom: #0a8b7e;
+    --shadow: 0 1px 2px rgba(20,25,45,.04), 0 12px 32px rgba(20,25,45,.06);
+  }
+  :root[data-theme="dark"] {
+    --paper: #0e111a; --surface: #161b26; --surface-2: #1c2230; --ink: #e9ecf3;
+    --ink-soft: #9aa3b4; --ink-faint: #6b7488; --rule: #262d3b; --accent: #93a2ff;
+    --accent-soft: #1a2140; --c-hook: #f0913a; --c-concept: #6f9bff; --c-check: #48c46e;
+    --c-exit: #ab6cf0; --c-video: #f0687f; --c-game: #35b6d0; --c-custom: #35b6a6;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 14px 34px rgba(0,0,0,.34);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-sans); line-height: 1.62; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 72px 28px 120px; }
+
+  .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0 0 14px; font-weight: 600; }
+  h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.05; letter-spacing: -.02em; font-weight: 800; margin: 0 0 16px; text-wrap: balance; }
+  .lede { font-size: 18px; color: var(--ink-soft); max-width: 60ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
+  .tag { font-family: var(--font-mono); font-size: 12px; padding: 5px 11px; border: 1px solid var(--rule); border-radius: 999px; color: var(--ink-soft); background: var(--surface); }
+  .tag b { color: var(--ink); font-weight: 600; }
+
+  section { margin-top: 72px; }
+  h2 { font-size: 25px; letter-spacing: -.01em; font-weight: 750; margin: 0 0 6px; text-wrap: balance; }
+  .sec-sub { color: var(--ink-soft); margin: 0 0 26px; max-width: 64ch; }
+  h3 { font-size: 16px; font-weight: 700; margin: 0 0 8px; }
+  p { margin: 0 0 14px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  strong { color: var(--ink); font-weight: 650; }
+  code { font-family: var(--font-mono); font-size: .92em; }
+
+  .card { background: var(--surface); border: 1px solid var(--rule); border-radius: 16px; box-shadow: var(--shadow); }
+
+  .diagram { padding: 22px; overflow-x: auto; }
+  .mermaid { min-width: 540px; }
+
+  .blocks { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .block-card { padding: 22px 24px; }
+  .block-card h3 { display: flex; align-items: center; gap: 9px; }
+  .dotset { display: inline-flex; gap: 4px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0 4px; }
+  .chip { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; border: 1.5px solid currentColor; background: var(--surface); }
+  .chip.custom { border-style: dashed; }
+  .note { font-size: 14px; color: var(--ink-soft); margin: 12px 0 0; }
+
+  .levels { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 8px; }
+  .level { padding: 16px 16px; }
+  .level .n { font-family: var(--font-mono); font-size: 11px; color: var(--accent); font-weight: 700; letter-spacing: .08em; }
+  .level h3 { font-size: 14px; margin: 6px 0 4px; }
+  .level p { font-size: 13px; color: var(--ink-soft); margin: 0; }
+
+  .schema-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .schema { padding: 0; overflow: hidden; }
+  .schema header { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--rule); background: var(--surface-2); }
+  .schema header .name { font-family: var(--font-mono); font-weight: 700; font-size: 14px; }
+  .schema header .role { font-size: 12px; color: var(--ink-faint); margin-left: auto; }
+  .schema pre { margin: 0; padding: 14px 16px; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.65; color: var(--ink-soft); overflow-x: auto; }
+  .schema .k { color: var(--ink); }
+  .schema .t { color: var(--accent); }
+  .schema .c { color: var(--ink-faint); font-style: italic; }
+
+  .map { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .map .card { padding: 18px 20px; }
+  .map h3 { font-family: var(--font-mono); font-size: 13px; color: var(--accent); letter-spacing: .06em; margin-bottom: 12px; }
+  .file { display: grid; grid-template-columns: 130px 1fr; gap: 10px; padding: 6px 0; border-top: 1px solid var(--rule); font-size: 13px; }
+  .file:first-of-type { border-top: none; }
+  .file code { color: var(--ink); font-weight: 600; }
+  .file span { color: var(--ink-soft); }
+
+  .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .fact { padding: 20px 22px; }
+  .fact .label { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  .fact p { margin: 8px 0 0; font-size: 14.5px; color: var(--ink-soft); }
+  .fact p strong { color: var(--ink); }
+
+  .routes { padding: 6px 4px; }
+  .route { display: grid; grid-template-columns: 58px 1fr; gap: 14px; padding: 12px 18px; align-items: baseline; border-top: 1px solid var(--rule); }
+  .route:first-child { border-top: none; }
+  .route .verb { font-family: var(--font-mono); font-size: 11px; font-weight: 700; padding: 3px 0; text-align: center; border-radius: 6px; background: var(--accent-soft); color: var(--accent); }
+  .route code { font-size: 13px; color: var(--ink); }
+  .route .desc { display: block; margin-top: 3px; font-size: 13.5px; color: var(--ink-soft); }
+
+  .decisions { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .decision { padding: 18px 20px; border-left: 3px solid var(--dc, var(--accent)); }
+  .decision .id { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--dc, var(--accent)); }
+  .decision h3 { margin: 4px 0 10px; font-size: 15.5px; line-height: 1.3; }
+  .decision .why { font-size: 13.5px; color: var(--ink-soft); margin: 0; }
+  .decision .why b { color: var(--ink); font-weight: 600; }
+
+  footer { margin-top: 84px; padding-top: 26px; border-top: 1px solid var(--rule); color: var(--ink-faint); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 22px; align-items: center; }
+
+  @media (max-width: 760px) {
+    .wrap { padding: 48px 20px 90px; }
+    .blocks, .schema-grid, .facts, .decisions, .map { grid-template-columns: 1fr; }
+    .levels { grid-template-columns: 1fr 1fr; }
+    section { margin-top: 56px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Lamma · Fullstack home assignment</p>
+    <h1>AI Lesson Generator — architecture &amp; decisions</h1>
+    <p class="lede">A K-12 teacher types a subject and grade; a two-stage AI pipeline builds a
+      clickable deck of pedagogical <em>moves</em> — including a playable game — that the teacher
+      can edit, save, and share. This is how it's built and why.</p>
+    <div class="meta">
+      <span class="tag"><b>Python</b> · FastAPI</span>
+      <span class="tag"><b>React</b> · Vite · TS</span>
+      <span class="tag"><b>Claude</b> · claude-haiku-4-5</span>
+      <span class="tag">structured outputs</span>
+      <span class="tag">file-based store</span>
+      <span class="tag">.pptx · share link</span>
+    </div>
+  </header>
+
+  <section>
+    <p class="eyebrow">Data flow</p>
+    <h2>From "generate" to a shared lesson</h2>
+    <p class="sec-sub">Generation is <strong>outline-then-fill</strong>: one call plans the moves
+      (or the teacher fixes the sequence), then one schema-constrained call per slide runs in
+      parallel. Media is resolved from the model's search intent — never invented. The deck lives
+      in the browser; a teacher can save it (a file) and share it (.pptx or an HTML link).</p>
+    <div class="card diagram">
+      <pre class="mermaid">
+flowchart TB
+  I["Teacher: subject + grade<br/>+ optional pedagogy / custom-type / structure blocks"]
+  subgraph BE["FastAPI backend"]
+    direction TB
+    O["Stage 1 · Outline<br/>AI plans the moves — or the teacher's fixed sequence"]
+    F["Stage 2 · Fill<br/>1 schema-constrained call per slide · parallel<br/>validate → retry once → placeholder"]
+    M["Resolve media<br/>video: YouTube search · image: Wikimedia"]
+    O --> F --> M
+  end
+  I -->|POST /generate/stream| BE
+  M --> D["Deck<br/>typed slides, incl. an interactive game"]
+  D --> R["React renders each slide BY TYPE"]
+  R --> E["Edit · reorder · regenerate (as any move)"]
+  E -->|regenerate| F
+  D --> S["Save → lessons/*.json&nbsp;&nbsp;·&nbsp;&nbsp;Share → .pptx / HTML view"]
+      </pre>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Core idea</p>
+    <h2>Everything is a block</h2>
+    <p class="sec-sub">The system is composed of two families of building blocks. Built-in blocks
+      are typed and proven; a teacher adds <strong>custom blocks</strong> at runtime that become
+      first-class — the planner uses them and they render — with no new code.</p>
+    <div class="blocks">
+      <div class="card block-card">
+        <h3>
+          <span class="dotset">
+            <span class="dot" style="background:var(--c-hook)"></span>
+            <span class="dot" style="background:var(--c-concept)"></span>
+            <span class="dot" style="background:var(--c-game)"></span>
+          </span>
+          Slide-type blocks
+        </h3>
+        <p class="note">A slide is a pedagogical <em>move</em>, not a layout. Each type owns a
+          schema (what the AI fills) and a renderer (how it shows). <code>sorting-game</code> is a
+          real, <strong>playable</strong> game — the AI supplies the data, the renderer is
+          interactive.</p>
+        <div class="chips">
+          <span class="chip" style="color:var(--c-hook)">hook</span>
+          <span class="chip" style="color:var(--c-concept)">concept</span>
+          <span class="chip" style="color:var(--c-check)">check-for-understanding</span>
+          <span class="chip" style="color:var(--c-exit)">exit-ticket</span>
+          <span class="chip" style="color:var(--c-video)">video</span>
+          <span class="chip" style="color:var(--c-game)">sorting-game</span>
+          <span class="chip custom" style="color:var(--c-custom)">+ custom</span>
+        </div>
+        <p class="note">Custom types fill a generic <code>CustomContent</code> schema and render
+          generically; unknown types are coerced to a safe default.</p>
+      </div>
+      <div class="card block-card">
+        <h3>
+          <span class="dotset"><span class="dot" style="background:var(--accent)"></span></span>
+          Pedagogy blocks
+        </h3>
+        <p class="note">The rules that shape a lesson, factored out of the prompt into editable
+          blocks. The lesson-planning prompt is <strong>assembled</strong> from a fixed base plus
+          the enabled blocks — edit them and the "behind the scenes" panel shows the prompt change.</p>
+        <div class="chips">
+          <span class="chip" style="color:var(--accent)">open with a hook</span>
+          <span class="chip" style="color:var(--accent)">match the grade</span>
+          <span class="chip" style="color:var(--accent)">verify understanding</span>
+          <span class="chip" style="color:var(--accent)">close with an exit ticket</span>
+          <span class="chip custom" style="color:var(--accent)">+ custom rule</span>
+        </div>
+        <p class="note">Toggle, edit, remove, or add. Enabled block texts ship with each request;
+          the backend joins them into the system prompt.</p>
+      </div>
+    </div>
+
+    <p class="sec-sub" style="margin:26px 0 10px">The teacher can drive it at any level — the AI
+      fills whatever is left blank:</p>
+    <div class="levels">
+      <div class="card level"><span class="n">LEVEL 0</span><h3>Nothing</h3><p>Subject + grade only. The AI is the curriculum designer.</p></div>
+      <div class="card level"><span class="n">LEVEL 1</span><h3>Pedagogy</h3><p>Tune the rules that shape how lessons are planned.</p></div>
+      <div class="card level"><span class="n">LEVEL 2</span><h3>Block types</h3><p>Define custom move types the planner can use.</p></div>
+      <div class="card level"><span class="n">LEVEL 3</span><h3>Structure</h3><p>Compose the exact slide sequence; AI writes each intent.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Modules</p>
+    <h2>Every file, one job</h2>
+    <p class="sec-sub">A thin repo where each module has a single responsibility — which is exactly
+      what the code walkthrough grades.</p>
+    <div class="map">
+      <div class="card">
+        <h3>backend/app</h3>
+        <div class="file"><code>main.py</code><span>HTTP layer · 15 routes · CORS</span></div>
+        <div class="file"><code>models.py</code><span>entities + the plugin registries</span></div>
+        <div class="file"><code>pipeline.py</code><span>outline→fill, blocks, media, streaming</span></div>
+        <div class="file"><code>store.py</code><span>file-based lesson persistence</span></div>
+        <div class="file"><code>export_pptx.py</code><span>color-coded PowerPoint export</span></div>
+        <div class="file"><code>share_html.py</code><span>standalone shareable HTML view</span></div>
+        <div class="file"><code>render.py</code><span>shared slide→text (pptx + html)</span></div>
+      </div>
+      <div class="card">
+        <h3>frontend/src</h3>
+        <div class="file"><code>App.tsx</code><span>state + orchestration</span></div>
+        <div class="file"><code>api.ts</code><span>fetch + NDJSON stream client</span></div>
+        <div class="file"><code>Deck · Slide</code><span>viewer + render-by-type plugin</span></div>
+        <div class="file"><code>SortingGame</code><span>the interactive game</span></div>
+        <div class="file"><code>*Panel · Composer</code><span>editable pedagogy / type / structure blocks</span></div>
+        <div class="file"><code>LessonsList</code><span>saved-lesson cards</span></div>
+        <div class="file"><code>ProcessPanel</code><span>live "behind the scenes" stream</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Entities</p>
+    <h2>The domain model</h2>
+    <p class="sec-sub">The code is the schema — Pydantic on the backend (<code>models.py</code>)
+      mirrored by TypeScript (<code>types.ts</code>). Slide <code>content</code> is validated by
+      its type's model at fill time, then stored as a plain object for transport.</p>
+    <div class="schema-grid">
+      <div class="card schema">
+        <header><span class="name">Deck · SavedLesson</span><span class="role">held / persisted</span></header>
+        <pre><span class="c"># Deck (in the browser)</span>
+<span class="k">subject</span>, <span class="k">grade</span>: <span class="t">str</span>
+<span class="k">slides</span>: <span class="t">Slide[]</span>
+
+<span class="c"># SavedLesson (a file)</span>
+<span class="k">id</span>, <span class="k">created_at</span>, <span class="k">updated_at</span>: <span class="t">str</span></pre>
+      </div>
+      <div class="card schema">
+        <header><span class="name">Slide</span><span class="role">rendered by type</span></header>
+        <pre><span class="k">id</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="t">str</span>
+<span class="k">type</span>&nbsp;&nbsp;&nbsp;: <span class="t">str</span>&nbsp;&nbsp;<span class="c"># built-in or custom</span>
+<span class="k">intent</span>&nbsp;: <span class="t">str</span>
+<span class="k">content</span>: <span class="t">dict</span>&nbsp;<span class="c"># type-specific</span>
+<span class="k">status</span>&nbsp;: <span class="t">"ok" | "failed"</span></pre>
+      </div>
+      <div class="card schema">
+        <header><span class="name">CONTENT_MODELS</span><span class="role">the plugin registry</span></header>
+        <pre><span class="k">hook</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&gt; <span class="t">HookContent</span>
+<span class="k">concept</span>&nbsp;&nbsp;-&gt; <span class="t">ConceptContent</span>
+<span class="k">check-...</span>-&gt; <span class="t">CheckContent</span>
+<span class="k">video</span>&nbsp;&nbsp;&nbsp;-&gt; <span class="t">VideoContent</span>
+<span class="k">sorting-game</span> -&gt; <span class="t">SortingGameContent</span>
+<span class="c">(else -&gt; CustomContent)</span></pre>
+      </div>
+      <div class="card schema">
+        <header><span class="name">SortingGameContent</span><span class="role">real game data</span></header>
+        <pre><span class="k">title</span>, <span class="k">prompt</span>: <span class="t">str</span>
+<span class="k">categories</span>: <span class="t">str[]</span>
+<span class="k">items</span>: <span class="t">{ text, category }[]</span>
+<span class="c"># rendered as a playable game</span></pre>
+      </div>
+      <div class="card schema">
+        <header><span class="name">PedagogyBlock</span><span class="role">editable rule</span></header>
+        <pre><span class="k">id</span>, <span class="k">label</span>, <span class="k">text</span>: <span class="t">str</span>
+<span class="k">enabled</span>: <span class="t">bool</span>
+<span class="c"># enabled ones join the prompt</span></pre>
+      </div>
+      <div class="card schema">
+        <header><span class="name">CustomTypeDef</span><span class="role">teacher-defined move</span></header>
+        <pre><span class="k">name</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="t">str</span>
+<span class="k">emoji</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="t">str</span>
+<span class="k">instruction</span>: <span class="t">str</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Data architecture</p>
+    <h2>Where state lives</h2>
+    <p class="sec-sub">The deck and all block config live in the browser. The one piece of
+      server-side state is the <strong>file store</strong> — no database.</p>
+    <div class="facts">
+      <div class="card fact">
+        <span class="label">Deck &amp; blocks</span>
+        <p><strong>React state.</strong> Edits, reorder, delete, and all block config are local —
+          no round-trip, no persistence layer.</p>
+      </div>
+      <div class="card fact">
+        <span class="label">Saved lessons</span>
+        <p>Each is a <strong>JSON file in <code>lessons/</code></strong>. Transferable and
+          git-friendly: commit one and it appears in anyone's list after a pull.</p>
+      </div>
+      <div class="card fact">
+        <span class="label">Streaming</span>
+        <p>Generate/regenerate stream <strong>NDJSON events</strong> — the exact prompt sent and
+          JSON returned — so the UI shows the pipeline working live.</p>
+      </div>
+      <div class="card fact">
+        <span class="label">Share &amp; resilience</span>
+        <p><strong>.pptx</strong> (color-coded) and a standalone <strong>HTML view</strong> link.
+          Per-slide retry→placeholder; no key → a bundled fallback deck.</p>
+      </div>
+    </div>
+    <div class="card routes" style="margin-top:20px">
+      <div class="route"><span class="verb">POST</span><div><code>/api/generate · /api/regenerate</code> (+ <code>/stream</code>)<span class="desc">subject + grade + blocks → a deck; streaming emits pipeline events</span></div></div>
+      <div class="route"><span class="verb">GET</span><div><code>/api/lessons</code> · <code>{id}</code> · <span style="opacity:.7">POST/PUT/DELETE</span><span class="desc">the file-based lesson store (save / list / load / update / delete)</span></div></div>
+      <div class="route"><span class="verb">GET</span><div><code>/api/lessons/{id}/view · /pptx</code> · <code>POST /api/export/pptx</code><span class="desc">share: a standalone HTML page, or a color-coded PowerPoint</span></div></div>
+      <div class="route"><span class="verb">GET</span><div><code>/api/health · /api/pedagogy · /api/slide-types</code><span class="desc">config the UI reads on load</span></div></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">How I think</p>
+    <h2>Key decisions</h2>
+    <p class="sec-sub">Every non-obvious choice is logged as <em>chose X over Y because Z</em> in
+      <code>docs/DECISIONS.md</code>. The load-bearing ones:</p>
+    <div class="decisions">
+      <div class="card decision" style="--dc:var(--c-concept)">
+        <span class="id">D-004</span>
+        <h3>A slide is a pedagogical move, not a layout</h3>
+        <p class="why">Same build cost as generic <code>title/bullets</code>, but <b>defensible</b>:
+          the types are the teacher's actual moves. Ties the product to the K-12 user.</p>
+      </div>
+      <div class="card decision" style="--dc:var(--accent)">
+        <span class="id">D-008</span>
+        <h3>Outline-then-fill; the AI decides the shape</h3>
+        <p class="why">Makes per-slide regenerate and failure handling <b>cheap</b>, and the plan
+          is a first-class artifact. No fixed template — unless the teacher sets one.</p>
+      </div>
+      <div class="card decision" style="--dc:var(--c-game)">
+        <span class="id">D-012</span>
+        <h3>Everything is a block — some custom</h3>
+        <p class="why">Slide types <em>and</em> pedagogy are composable blocks, built-in-proven and
+          user-extensible. A custom block enters the system with <b>no new code</b>.</p>
+      </div>
+      <div class="card decision" style="--dc:var(--c-check)">
+        <span class="id">D-010</span>
+        <h3>Failure reuses the happy path</h3>
+        <p class="why">Validate → retry once → a <b>regeneratable placeholder</b>. A failed slide is
+          just a slide waiting to be regenerated — same button, no error mode.</p>
+      </div>
+      <div class="card decision" style="--dc:var(--c-video)">
+        <span class="id">D-002</span>
+        <h3>Slides are the container; video is one type</h3>
+        <p class="why">The model returns a <b>search intent</b>; the backend resolves a real
+          embeddable clip (and, for other slides, a Wikimedia image).</p>
+      </div>
+      <div class="card decision" style="--dc:var(--c-exit)">
+        <span class="id">D-011 · revisited</span>
+        <h3>Started stateless; added save/share on request</h3>
+        <p class="why">Persistence was a deliberate cut for thinness. The founders asked to save and
+          share, so I added a <b>file store</b> (not a DB) — still git-shareable, minimal surface.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Lamma Lesson Generator</span>
+    <span>·</span>
+    <span>itay@lamma-ed.com · yoav@lamma-ed.com</span>
+  </footer>
+
+</div>
+
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+mermaid.initialize({ startOnLoad: true });
+</script>
+</body>
+</html>
