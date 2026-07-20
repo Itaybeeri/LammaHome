@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import PromptBox from "./components/PromptBox";
+import StructureComposer from "./components/StructureComposer";
 import DeckView from "./components/Deck";
 import ProcessPanel from "./components/ProcessPanel";
 import PedagogyPanel from "./components/PedagogyPanel";
@@ -30,6 +31,8 @@ export default function App() {
       instruction: "A short on-screen interactive game students play to practice the idea.",
     },
   ]);
+  // Optional teacher-chosen slide sequence (empty = let the AI plan).
+  const [plan, setPlan] = useState<string[]>([]);
 
   // On load, find out whether a key is configured. If not, force demo mode.
   useEffect(() => {
@@ -60,6 +63,9 @@ export default function App() {
     : null;
   // Only send fully-specified custom blocks.
   const customTypesToSend = customTypes.filter((c) => c.name.trim() && c.instruction.trim());
+  // Optional teacher-chosen slide sequence (empty = AI plans).
+  const builtinTypes = new Set(SLIDE_TYPES);
+  const availableTypes = [...SLIDE_TYPES, ...customTypesToSend.map((c) => c.name)];
 
   const append = (ev: ProgressEvent) => setLog((l) => [...l, ev]);
 
@@ -68,7 +74,11 @@ export default function App() {
     setError(null);
     setLog([]);
     try {
-      setDeck(await generateDeck(subject, grade, demo, append, pedagogyRules, customTypesToSend));
+      setDeck(
+        await generateDeck(
+          subject, grade, demo, append, pedagogyRules, customTypesToSend, plan.length ? plan : null,
+        ),
+      );
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -126,6 +136,13 @@ export default function App() {
         mode={mode}
         onModeChange={setMode}
         liveApi={liveApi}
+      />
+
+      <StructureComposer
+        availableTypes={availableTypes}
+        builtin={builtinTypes}
+        plan={plan}
+        onChange={setPlan}
       />
 
       {liveApi === false && (

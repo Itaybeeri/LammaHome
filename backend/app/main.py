@@ -68,7 +68,7 @@ def slide_types() -> dict:
 @app.post("/api/generate", response_model=Deck)
 async def generate(req: GenerateRequest) -> Deck:
     return await pipeline.generate_deck(
-        req.subject, req.grade, req.demo, req.pedagogy, _customs(req)
+        req.subject, req.grade, req.demo, req.pedagogy, _customs(req), req.plan
     )
 
 
@@ -89,7 +89,7 @@ async def _ndjson(events) -> AsyncIterator[str]:
 @app.post("/api/generate/stream")
 async def generate_stream(req: GenerateRequest) -> StreamingResponse:
     events = pipeline.generate_deck_events(
-        req.subject, req.grade, req.demo, req.pedagogy, _customs(req)
+        req.subject, req.grade, req.demo, req.pedagogy, _customs(req), req.plan
     )
     return StreamingResponse(_ndjson(events), media_type="application/x-ndjson")
 

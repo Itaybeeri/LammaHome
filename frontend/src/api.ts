@@ -60,10 +60,11 @@ export async function generateDeck(
   onEvent: (ev: ProgressEvent) => void,
   pedagogy?: string[] | null,
   customTypes?: CustomTypeDef[] | null,
+  plan?: string[] | null,
 ): Promise<Deck> {
   let deck: Deck | null = null;
   let err: string | null = null;
-  const body = { subject, grade, demo, pedagogy, custom_types: customTypes };
+  const body = { subject, grade, demo, pedagogy, custom_types: customTypes, plan };
   await streamNdjson("/api/generate/stream", body, (ev) => {
     if (ev.type === "done" && ev.deck) deck = ev.deck;
     if (ev.type === "error" && ev.message) err = ev.message;

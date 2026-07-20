@@ -157,6 +157,11 @@ class GenerateRequest(BaseModel):
         default=None,
         description="Teacher-defined custom slide-type blocks the planner may use.",
     )
+    plan: list[str] | None = Field(
+        default=None,
+        description="An ordered list of move types chosen by the teacher. If set, this IS the "
+        "structure (the AI only writes each slide's intent). Empty/None = the AI plans.",
+    )
 
 
 class RegenerateRequest(BaseModel):

@@ -120,11 +120,40 @@ def outline_system(pedagogy: list[str] | None, custom_types: list[dict] | None =
     return "\n\n".join(parts)
 
 
+def _outline_prompt(subject: str, grade: str, plan: list[str] | None) -> str:
+    """The user prompt for stage 1. With a teacher `plan`, the move sequence is
+    fixed and the model only writes each slide's intent; otherwise it plans freely."""
+    if plan:
+        seq = "\n".join(f"{i + 1}. {t}" for i, t in enumerate(plan))
+        return (
+            f"Subject: {subject}\nGrade: {grade}\n\n"
+            f"Build the lesson using EXACTLY these moves, in this order — do not add, remove, "
+            f"or reorder them:\n{seq}\n\n"
+            f"For each move, write one line describing what that specific slide should "
+            f"accomplish for this topic."
+        )
+    return f"Subject: {subject}\nGrade: {grade}\n\nPlan the lesson."
+
+
 async def generate_outline(
-    subject: str, grade: str, pedagogy: list[str] | None = None, custom_types: list[dict] | None = None
+    subject: str,
+    grade: str,
+    pedagogy: list[str] | None = None,
+    custom_types: list[dict] | None = None,
+    plan: list[str] | None = None,
 ) -> Outline:
-    prompt = f"Subject: {subject}\nGrade: {grade}\n\nPlan the lesson."
-    outline = await _generate(Outline, outline_system(pedagogy, custom_types), prompt)
+    outline = await _generate(
+        Outline, outline_system(pedagogy, custom_types), _outline_prompt(subject, grade, plan)
+    )
+    if plan:
+        # The teacher fixed the structure — force the types, keep the AI's intents.
+        if outline is not None and len(outline.slides) == len(plan):
+            for s, t in zip(outline.slides, plan):
+                s.type = t
+            return outline
+        return Outline(
+            slides=[PlannedSlide(type=t, intent=f"The {t} for this lesson on {subject}.") for t in plan]
+        )
     if outline is None:
         # Outline is load-bearing; a minimal safe default beats a hard failure.
         return Outline(
@@ -304,6 +333,7 @@ async def generate_deck_events(
     demo: bool = False,
     pedagogy: list[str] | None = None,
     custom_types: list[dict] | None = None,
+    plan: list[str] | None = None,
 ):
     """Run the pipeline, yielding technical progress events (the exact prompt
     sent to the model and the JSON it returned) so the UI can show what's
@@ -322,11 +352,14 @@ async def generate_deck_events(
     # Stage 1 — outline. The system prompt is assembled from the editable
     # pedagogy blocks, so the panel shows exactly what the blocks produced.
     custom_map = _custom_map(custom_types)
-    outline_prompt = f"Subject: {subject}\nGrade: {grade}\n\nPlan the lesson."
+    if plan:
+        yield {"type": "note",
+               "message": f"Using the teacher's chosen structure: {' → '.join(plan)}."}
     yield {"type": "call", "stage": "outline", "model": MODEL, "schema": "Outline",
-           "system": outline_system(pedagogy, custom_types), "prompt": outline_prompt}
+           "system": outline_system(pedagogy, custom_types),
+           "prompt": _outline_prompt(subject, grade, plan)}
     try:
-        outline = await generate_outline(subject, grade, pedagogy, custom_types)
+        outline = await generate_outline(subject, grade, pedagogy, custom_types, plan)
     except Exception as e:
         yield {"type": "error", "message": _friendly_error(e)}
         return
@@ -379,10 +412,11 @@ async def generate_deck(
     demo: bool = False,
     pedagogy: list[str] | None = None,
     custom_types: list[dict] | None = None,
+    plan: list[str] | None = None,
 ) -> Deck:
     """Non-streaming form — consume the event stream and return the final deck."""
     deck: Deck | None = None
-    async for ev in generate_deck_events(subject, grade, demo, pedagogy, custom_types):
+    async for ev in generate_deck_events(subject, grade, demo, pedagogy, custom_types, plan):
         if ev["type"] == "done":
             deck = Deck.model_validate(ev["deck"])
     assert deck is not None

@@ -143,6 +143,22 @@ button.danger { color: #e5385b; }
 /* Custom slide types (no built-in color) get a teal theme */
 .custom-slide { --bold: #00897b; --pale: #e0f2f1; }
 
+/* Optional lesson-structure composer (under the prompt box) */
+.structure { margin-top: 14px; background: var(--paper); border: 1px solid var(--rule); border-radius: 14px; padding: 16px 18px; }
+.structure-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.linkish { border: none; background: transparent; color: #3a86ff; font-weight: 600; font-size: 13px; padding: 2px 6px; }
+.structure-hint { margin: 0 0 12px; font-size: 13.5px; }
+.plan-seq { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; padding: 0; }
+.plan-seq li { display: inline-flex; align-items: center; gap: 6px; }
+.plan-seq .seq-n { font-size: 11px; opacity: 0.7; font-weight: 800; }
+.plan-seq li button { border: none; background: transparent; color: inherit; cursor: pointer; font-size: 13px; padding: 0 2px; line-height: 1; }
+.plan-seq li button:disabled { opacity: 0.3; cursor: default; }
+.palette { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+.palette .muted { margin-right: 2px; }
+.chip.ct { color: #00897b; border-color: #00897b; }
+.chip.addable { cursor: pointer; }
+.chip.addable:hover:not(:disabled) { border-color: currentColor; background: var(--paper); }
+
 /* Workspace: deck on the left, process panel on the right */
 .workspace { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; margin-top: 30px; }
 
