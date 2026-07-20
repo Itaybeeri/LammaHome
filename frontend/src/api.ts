@@ -46,6 +46,25 @@ export async function deleteLesson(id: string): Promise<void> {
   if (!res.ok) throw new Error(`Delete failed (${res.status})`);
 }
 
+// Export the current deck to PowerPoint and trigger a download.
+export async function exportPptx(deck: Deck): Promise<void> {
+  const res = await fetch("/api/export/pptx", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(deck),
+  });
+  if (!res.ok) throw new Error(`Export failed (${res.status})`);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${(deck.subject || "lesson").replace(/\s+/g, "-")}.pptx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 // A progress event from the backend pipeline (newline-delimited JSON).
 export interface ProgressEvent {
   type: "note" | "call" | "result" | "error" | "done";

@@ -8,6 +8,7 @@ import SlideTypesPanel from "./components/SlideTypesPanel";
 import LessonsList from "./components/LessonsList";
 import {
   deleteLesson,
+  exportPptx,
   generateDeck,
   getLesson,
   getPedagogy,
@@ -190,6 +191,15 @@ export default function App() {
     }
   }
 
+  async function handleExportPptx() {
+    if (!deck) return;
+    try {
+      await exportPptx(deck);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
   return (
     <main>
       <header>
@@ -233,6 +243,12 @@ export default function App() {
           <button className="save-btn" onClick={handleSave} disabled={saving}>
             {saving ? "Saving…" : currentLessonId ? "Update saved lesson" : "💾 Save lesson"}
           </button>
+          <button onClick={handleExportPptx}>Export .pptx</button>
+          {currentLessonId && (
+            <a className="share-link" href={`/api/lessons/${currentLessonId}/view`} target="_blank" rel="noreferrer">
+              Open share page ↗
+            </a>
+          )}
           {currentLessonId && <span className="muted saved-tag">saved ✓</span>}
         </div>
       )}

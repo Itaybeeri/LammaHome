@@ -188,8 +188,12 @@ button.danger { color: #e5385b; }
 .lesson-subject { font-weight: 700; font-size: 15px; text-transform: capitalize; }
 .lesson-meta { font-size: 13px; color: #6a6a7a; }
 .lesson-date { font-size: 12px; color: #9a9aa6; }
-.lesson-actions { display: flex; gap: 8px; margin-top: 10px; }
+.lesson-actions { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
 .lesson-actions button:first-child { flex: 1; }
+.mini-link { font-size: 13px; font-weight: 600; color: #3a86ff; text-decoration: none; white-space: nowrap; }
+.mini-link:hover { text-decoration: underline; }
+.share-link { font-size: 14px; font-weight: 600; color: #3a86ff; text-decoration: none; padding: 8px 6px; }
+.share-link:hover { text-decoration: underline; }
 
 /* Optional lesson-structure composer (under the prompt box) */
 .structure { margin-top: 14px; background: var(--paper); border: 1px solid var(--rule); border-radius: 14px; padding: 16px 18px; }

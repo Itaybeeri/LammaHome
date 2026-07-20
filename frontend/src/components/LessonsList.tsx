@@ -41,6 +41,10 @@ export default function LessonsList({
                   <div className="lesson-date">{fmt(l.updated_at)}</div>
                   <div className="lesson-actions">
                     <button type="button" onClick={() => onLoad(l.id)}>Open</button>
+                    <a className="mini-link" href={`/api/lessons/${l.id}/view`} target="_blank" rel="noreferrer">
+                      Share
+                    </a>
+                    <a className="mini-link" href={`/api/lessons/${l.id}/pptx`}>.pptx</a>
                     <button type="button" className="block-remove" onClick={() => onDelete(l.id)} aria-label="Delete">
                       ✕
                     </button>

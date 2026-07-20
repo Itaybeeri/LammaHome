@@ -18,9 +18,9 @@ from collections.abc import AsyncIterator  # noqa: E402
 
 from fastapi import FastAPI, HTTPException  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
-from fastapi.responses import StreamingResponse  # noqa: E402
+from fastapi.responses import HTMLResponse, Response, StreamingResponse  # noqa: E402
 
-from . import pipeline, store  # noqa: E402
+from . import export_pptx, pipeline, share_html, store  # noqa: E402
 from .models import (  # noqa: E402
     BUILTIN_TYPES,
     Deck,
@@ -95,6 +95,41 @@ def delete_lesson(lesson_id: str) -> dict:
     if not store.delete_lesson(lesson_id):
         raise HTTPException(status_code=404, detail="Lesson not found")
     return {"ok": True}
+
+
+_PPTX_MIME = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+
+
+def _pptx_response(deck: Deck) -> Response:
+    fname = (deck.subject or "lesson").strip().replace(" ", "-") or "lesson"
+    return Response(
+        content=export_pptx.build_pptx(deck),
+        media_type=_PPTX_MIME,
+        headers={"Content-Disposition": f'attachment; filename="{fname}.pptx"'},
+    )
+
+
+@app.post("/api/export/pptx")
+def export_pptx_endpoint(deck: Deck) -> Response:
+    """Export the current deck to PowerPoint (no need to save first)."""
+    return _pptx_response(deck)
+
+
+@app.get("/api/lessons/{lesson_id}/pptx")
+def lesson_pptx(lesson_id: str) -> Response:
+    lesson = store.get_lesson(lesson_id)
+    if lesson is None:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+    return _pptx_response(Deck(subject=lesson.subject, grade=lesson.grade, slides=lesson.slides))
+
+
+@app.get("/api/lessons/{lesson_id}/view", response_class=HTMLResponse)
+def lesson_view(lesson_id: str) -> HTMLResponse:
+    """A standalone, shareable HTML page rendering the lesson."""
+    lesson = store.get_lesson(lesson_id)
+    if lesson is None:
+        return HTMLResponse("<h1>Lesson not found</h1>", status_code=404)
+    return HTMLResponse(share_html.render_lesson_html(lesson))
 
 
 @app.get("/api/slide-types")
