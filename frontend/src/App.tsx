@@ -5,8 +5,26 @@ import DeckView from "./components/Deck";
 import ProcessPanel from "./components/ProcessPanel";
 import PedagogyPanel from "./components/PedagogyPanel";
 import SlideTypesPanel from "./components/SlideTypesPanel";
-import { generateDeck, getPedagogy, regenerateSlide, type ProgressEvent } from "./api";
-import { SLIDE_TYPES, type CustomTypeDef, type Deck, type PedagogyBlock, type Slide } from "./types";
+import LessonsList from "./components/LessonsList";
+import {
+  deleteLesson,
+  generateDeck,
+  getLesson,
+  getPedagogy,
+  listLessons,
+  regenerateSlide,
+  saveLesson,
+  updateLesson,
+  type ProgressEvent,
+} from "./api";
+import {
+  SLIDE_TYPES,
+  type CustomTypeDef,
+  type Deck,
+  type LessonSummary,
+  type PedagogyBlock,
+  type Slide,
+} from "./types";
 
 export default function App() {
   const [deck, setDeck] = useState<Deck | null>(null);
@@ -33,6 +51,15 @@ export default function App() {
   ]);
   // Optional teacher-chosen slide sequence (empty = let the AI plan).
   const [plan, setPlan] = useState<string[]>([]);
+  // Saved lessons (file store).
+  const [lessons, setLessons] = useState<LessonSummary[]>([]);
+  const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const refreshLessons = () => listLessons().then(setLessons).catch(() => {});
+  useEffect(() => {
+    refreshLessons();
+  }, []);
 
   // On load, find out whether a key is configured. If not, force demo mode.
   useEffect(() => {
@@ -74,11 +101,11 @@ export default function App() {
     setError(null);
     setLog([]);
     try {
-      setDeck(
-        await generateDeck(
-          subject, grade, demo, append, pedagogyRules, customTypesToSend, plan.length ? plan : null,
-        ),
+      const d = await generateDeck(
+        subject, grade, demo, append, pedagogyRules, customTypesToSend, plan.length ? plan : null,
       );
+      setDeck(d);
+      setCurrentLessonId(null); // a freshly generated deck is unsaved
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -123,6 +150,46 @@ export default function App() {
     setDeck({ ...deck, slides });
   }
 
+  // --- Save / load lessons (file store) ---
+  async function handleSave() {
+    if (!deck) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const saved = currentLessonId
+        ? await updateLesson(currentLessonId, deck)
+        : await saveLesson(deck);
+      setCurrentLessonId(saved.id);
+      await refreshLessons();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleLoadLesson(id: string) {
+    setError(null);
+    try {
+      const lesson = await getLesson(id);
+      setDeck({ subject: lesson.subject, grade: lesson.grade, slides: lesson.slides });
+      setCurrentLessonId(id);
+      setLog([]);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  async function handleDeleteLesson(id: string) {
+    try {
+      await deleteLesson(id);
+      if (id === currentLessonId) setCurrentLessonId(null);
+      await refreshLessons();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
   return (
     <main>
       <header>
@@ -154,6 +221,21 @@ export default function App() {
         <PedagogyPanel baseSystem={baseSystem} blocks={pedagogy} onChange={setPedagogy} />
       )}
       <SlideTypesPanel builtins={SLIDE_TYPES} customTypes={customTypes} onChange={setCustomTypes} />
+      <LessonsList
+        lessons={lessons}
+        currentId={currentLessonId}
+        onLoad={handleLoadLesson}
+        onDelete={handleDeleteLesson}
+      />
+
+      {deck && (
+        <div className="deck-actions">
+          <button className="save-btn" onClick={handleSave} disabled={saving}>
+            {saving ? "Saving…" : currentLessonId ? "Update saved lesson" : "💾 Save lesson"}
+          </button>
+          {currentLessonId && <span className="muted saved-tag">saved ✓</span>}
+        </div>
+      )}
 
       <div className="workspace">
         {deck && (

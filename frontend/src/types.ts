@@ -39,6 +39,23 @@ export interface Deck {
   slides: Slide[];
 }
 
+// A saved lesson (a deck persisted as a file) and its list-row summary.
+export interface SavedLesson {
+  id: string;
+  subject: string;
+  grade: string;
+  slides: Slide[];
+  created_at: string;
+  updated_at: string;
+}
+export interface LessonSummary {
+  id: string;
+  subject: string;
+  grade: string;
+  slide_count: number;
+  updated_at: string;
+}
+
 // An editable pedagogy rule. Enabled blocks are assembled into the AI's lesson-
 // planning prompt, so the teacher composes the pedagogy from building blocks.
 export interface PedagogyBlock {

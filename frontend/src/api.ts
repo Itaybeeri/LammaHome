@@ -1,10 +1,49 @@
-import type { CustomTypeDef, Deck, PedagogyBlock, Slide } from "./types";
+import type { CustomTypeDef, Deck, LessonSummary, PedagogyBlock, SavedLesson, Slide } from "./types";
 
 // The fixed base prompt + the default, editable pedagogy blocks.
 export async function getPedagogy(): Promise<{ base_system: string; blocks: PedagogyBlock[] }> {
   const res = await fetch("/api/pedagogy");
   if (!res.ok) throw new Error(`Pedagogy fetch failed (${res.status})`);
   return res.json();
+}
+
+// --- Saved lessons (file-based store) ---
+
+export async function listLessons(): Promise<LessonSummary[]> {
+  const res = await fetch("/api/lessons");
+  if (!res.ok) throw new Error(`List lessons failed (${res.status})`);
+  return res.json();
+}
+
+export async function saveLesson(deck: Deck): Promise<SavedLesson> {
+  const res = await fetch("/api/lessons", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(deck),
+  });
+  if (!res.ok) throw new Error(`Save failed (${res.status})`);
+  return res.json();
+}
+
+export async function updateLesson(id: string, deck: Deck): Promise<SavedLesson> {
+  const res = await fetch(`/api/lessons/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(deck),
+  });
+  if (!res.ok) throw new Error(`Update failed (${res.status})`);
+  return res.json();
+}
+
+export async function getLesson(id: string): Promise<SavedLesson> {
+  const res = await fetch(`/api/lessons/${id}`);
+  if (!res.ok) throw new Error(`Load failed (${res.status})`);
+  return res.json();
+}
+
+export async function deleteLesson(id: string): Promise<void> {
+  const res = await fetch(`/api/lessons/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Delete failed (${res.status})`);
 }
 
 // A progress event from the backend pipeline (newline-delimited JSON).

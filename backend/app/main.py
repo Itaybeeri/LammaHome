@@ -16,16 +16,18 @@ load_dotenv()  # read backend/.env before the pipeline reads ANTHROPIC_API_KEY
 import json  # noqa: E402
 from collections.abc import AsyncIterator  # noqa: E402
 
-from fastapi import FastAPI  # noqa: E402
+from fastapi import FastAPI, HTTPException  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from fastapi.responses import StreamingResponse  # noqa: E402
 
-from . import pipeline  # noqa: E402
+from . import pipeline, store  # noqa: E402
 from .models import (  # noqa: E402
     BUILTIN_TYPES,
     Deck,
     GenerateRequest,
+    LessonSummary,
     RegenerateRequest,
+    SavedLesson,
     Slide,
 )
 
@@ -57,6 +59,42 @@ def pedagogy() -> dict:
         "base_system": pipeline.BASE_OUTLINE_SYSTEM,
         "blocks": [{**b, "enabled": True} for b in pipeline.DEFAULT_PEDAGOGY],
     }
+
+
+# --- Saved lessons (file-based store) --------------------------------------
+
+
+@app.get("/api/lessons", response_model=list[LessonSummary])
+def list_lessons() -> list[LessonSummary]:
+    return store.list_lessons()
+
+
+@app.post("/api/lessons", response_model=SavedLesson)
+def save_lesson(deck: Deck) -> SavedLesson:
+    return store.save_lesson(deck)
+
+
+@app.get("/api/lessons/{lesson_id}", response_model=SavedLesson)
+def get_lesson(lesson_id: str) -> SavedLesson:
+    lesson = store.get_lesson(lesson_id)
+    if lesson is None:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+    return lesson
+
+
+@app.put("/api/lessons/{lesson_id}", response_model=SavedLesson)
+def update_lesson(lesson_id: str, deck: Deck) -> SavedLesson:
+    lesson = store.update_lesson(lesson_id, deck)
+    if lesson is None:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+    return lesson
+
+
+@app.delete("/api/lessons/{lesson_id}")
+def delete_lesson(lesson_id: str) -> dict:
+    if not store.delete_lesson(lesson_id):
+        raise HTTPException(status_code=404, detail="Lesson not found")
+    return {"ok": True}
 
 
 @app.get("/api/slide-types")
