@@ -1,4 +1,5 @@
 import type { Slide } from "../types";
+import SortingGame from "./SortingGame";
 
 // Renders a slide BY TYPE. This switch is the frontend half of the slide-type
 // "plugin" (the backend half is CONTENT_MODELS in models.py). Built-in types
@@ -11,6 +12,7 @@ const META: Record<string, { emoji: string; label: string }> = {
   "check-for-understanding": { emoji: "✅", label: "Check for understanding" },
   "exit-ticket": { emoji: "🎟️", label: "Exit ticket" },
   video: { emoji: "🎬", label: "Video" },
+  "sorting-game": { emoji: "🎮", label: "Game" },
 };
 
 export default function SlideView({ slide }: { slide: Slide }) {
@@ -105,6 +107,14 @@ function SlideContent({ slide }: { slide: Slide }) {
         </>
       );
     }
+
+    case "sorting-game":
+      return (
+        <>
+          <h2>{str(c.title)}</h2>
+          <SortingGame content={c} />
+        </>
+      );
 
     // Custom slide-type block: generic title / image / body / bullets.
     default:

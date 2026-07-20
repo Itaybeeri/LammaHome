@@ -142,6 +142,38 @@ button.danger { color: #e5385b; }
 
 /* Custom slide types (no built-in color) get a teal theme */
 .custom-slide { --bold: #00897b; --pale: #e0f2f1; }
+.type-sorting-game { --bold: #0891b2; --pale: #cffafe; }
+
+/* Interactive sorting game */
+.game-prompt { font-size: 16px; margin: 0 0 16px; }
+.game-pool {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-height: 44px;
+  padding: 10px 12px; border: 2px dashed var(--bold, #ccc); border-radius: 12px;
+  background: #fff; margin-bottom: 16px;
+}
+.game-hint { color: #555; font-size: 13px; opacity: .75; }
+.game-chip {
+  font-size: 14px; font-weight: 600; padding: 7px 13px; border-radius: 999px;
+  border: 2px solid var(--bold, #888); background: #fff; color: var(--bold, #333); cursor: pointer;
+}
+.game-chip.selected { background: var(--bold); color: #fff; box-shadow: 0 0 0 3px var(--pale); }
+.game-chip.right { border-color: #2ea043; color: #2ea043; }
+.game-chip.right::after { content: " ✓"; }
+.game-chip.wrong { border-color: #e5385b; color: #e5385b; }
+.game-chip.wrong::after { content: " ✗"; }
+.game-bins { display: flex; gap: 12px; flex-wrap: wrap; }
+.game-bin { flex: 1 1 180px; border: 2px solid var(--rule); border-radius: 12px; overflow: hidden; background: #fff; }
+.game-bin-head {
+  width: 100%; text-align: left; padding: 10px 14px; font-weight: 700; font-size: 14px;
+  background: var(--pale, #f0f0f0); color: var(--bold, #222); border: none; cursor: pointer;
+}
+.drop-hint { font-weight: 500; font-size: 12px; opacity: .7; }
+.game-bin-body { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; min-height: 48px; }
+.game-controls { display: flex; align-items: center; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+.game-check { background: var(--bold); color: #fff; border: none; font-weight: 700; }
+.game-check:disabled { opacity: .5; }
+.game-score { font-weight: 700; }
+.game-score.solved { color: #2ea043; }
 
 /* Optional lesson-structure composer (under the prompt box) */
 .structure { margin-top: 14px; background: var(--paper); border: 1px solid var(--rule); border-radius: 14px; padding: 16px 18px; }

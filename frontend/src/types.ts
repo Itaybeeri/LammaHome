@@ -5,7 +5,8 @@ export type SlideType =
   | "concept"
   | "check-for-understanding"
   | "exit-ticket"
-  | "video";
+  | "video"
+  | "sorting-game";
 
 export const SLIDE_TYPES: SlideType[] = [
   "hook",
@@ -13,6 +14,7 @@ export const SLIDE_TYPES: SlideType[] = [
   "check-for-understanding",
   "exit-ticket",
   "video",
+  "sorting-game",
 ];
 
 export interface Slide {

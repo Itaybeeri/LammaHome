@@ -26,9 +26,9 @@ export default function App() {
   // Custom slide-type blocks (seeded with one example so the feature is visible).
   const [customTypes, setCustomTypes] = useState<CustomTypeDef[]>([
     {
-      name: "mini-game",
-      emoji: "🎮",
-      instruction: "A short on-screen interactive game students play to practice the idea.",
+      name: "fun-fact",
+      emoji: "✨",
+      instruction: "A surprising, memorable fun fact related to the topic.",
     },
   ]);
   // Optional teacher-chosen slide sequence (empty = let the AI plan).

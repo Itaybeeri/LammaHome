@@ -65,6 +65,22 @@ class VideoContent(BaseModel):
     )
 
 
+class GameItem(BaseModel):
+    text: str = Field(description="A short thing the student sorts.")
+    category: str = Field(description="The correct category for this item (one of the categories).")
+
+
+class SortingGameContent(BaseModel):
+    """A real, playable sort-into-categories game — the model produces the game
+    DATA (buckets + items with their correct bucket), the frontend renders it as
+    an interactive drag/click game (see SortingGame.tsx)."""
+
+    title: str
+    prompt: str = Field(description="One or two sentences telling the student what to do.")
+    categories: list[str] = Field(description="2-3 category/bucket names to sort into.")
+    items: list[GameItem] = Field(description="4-8 items, each tagged with its correct category.")
+
+
 class CustomContent(BaseModel):
     """The generic schema used for CUSTOM slide-type blocks the teacher defines
     at runtime. Any type not in CONTENT_MODELS is filled with this shape and
@@ -85,6 +101,7 @@ CONTENT_MODELS: dict[str, type[BaseModel]] = {
     "check-for-understanding": CheckContent,
     "exit-ticket": ExitTicketContent,
     "video": VideoContent,
+    "sorting-game": SortingGameContent,
 }
 
 # One-line descriptions of the built-in moves, for the outline prompt.
@@ -94,6 +111,7 @@ BUILTIN_TYPES: dict[str, str] = {
     "check-for-understanding": "verify students understood something",
     "exit-ticket": "a closing prompt the teacher collects",
     "video": "a short clip when seeing a process matters",
+    "sorting-game": "an interactive game where students sort items into the right categories",
 }
 
 
@@ -137,6 +155,27 @@ class Deck(BaseModel):
     subject: str
     grade: str
     slides: list[Slide]
+
+
+class SavedLesson(BaseModel):
+    """A deck persisted in the store — savable, loadable, and editable later."""
+
+    id: str
+    subject: str
+    grade: str
+    slides: list[Slide]
+    created_at: str
+    updated_at: str
+
+
+class LessonSummary(BaseModel):
+    """A lightweight row for the 'saved lessons' list."""
+
+    id: str
+    subject: str
+    grade: str
+    slide_count: int
+    updated_at: str
 
 
 # --- API request bodies -----------------------------------------------------
