@@ -90,6 +90,22 @@ The script sets up the Python venv and installs deps on first run, then starts
 the backend (port **8123**) and frontend (port **5273**) together. Ctrl+C stops
 both. Open **http://localhost:5273**.
 
+> **Windows:** if PowerShell refuses to run the script (execution policy, or the
+> "downloaded file" block you get from a ZIP rather than a `git clone`), use:
+> ```
+> powershell -ExecutionPolicy Bypass -File run.ps1
+> ```
+
+> **Re-running after a `git pull`:** the scripts install dependencies only when
+> `backend/.venv` / `frontend/node_modules` are *missing*, so they won't pick up
+> a changed `requirements.txt` or `package.json` on their own. If the app fails
+> to start after pulling, refresh deps by hand:
+> ```
+> backend/.venv/Scripts/python -m pip install -r backend/requirements.txt   # Windows
+> backend/.venv/bin/python     -m pip install -r backend/requirements.txt   # macOS / Linux
+> cd frontend && npm install
+> ```
+
 **API key:** if no Anthropic key is found, the script prompts you to paste one
 and saves it to `backend/.env`. Press Enter to skip — the app then runs in
 **offline demo mode** (the pre-generated deck only; "Real AI" is disabled). You
